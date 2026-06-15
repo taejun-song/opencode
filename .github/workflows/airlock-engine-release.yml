@@ -35,6 +35,19 @@ jobs:
       - name: Build engine (all platforms, TUI; web UI skipped)
         run: bun packages/opencode/script/build.ts --skip-embed-web-ui
 
+      - name: Verify branding (fail loud if any platform is not airlock-branded)
+        run: |
+          set -euo pipefail
+          for plat in linux-x64 linux-arm64 darwin-x64 darwin-arm64 windows-x64; do
+            bin="packages/opencode/dist/opencode-${plat}/bin/opencode"
+            [ "$plat" = "windows-x64" ] && bin="packages/opencode/dist/opencode-windows-x64/bin/opencode.exe"
+            [ -f "$bin" ] || { echo "missing build output for ${plat}"; exit 1; }
+            # REQUIRE the airlock terminal-title; FORBID the upstream wordmark art row.
+            LC_ALL=C grep -aqF 'setTerminalTitle("airlock")' "$bin" || { echo "[$plat] MISSING airlock title"; exit 1; }
+            if LC_ALL=C grep -aqF '█▀▀█ █▀▀█ █▀▀█ █▀▀▄' "$bin"; then echo "[$plat] upstream wordmark art present"; exit 1; fi
+            echo "[$plat] branding OK"
+          done
+
       - name: Package airlock-engine artifacts (5 target platforms)
         run: |
           set -euo pipefail
