@@ -32,6 +32,12 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Derive engine base version from the overlay tag
+        run: |
+          base="$(printf '%s' '${{ inputs.overlay_tag }}' | sed -E 's/^airlock-v([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+$/\1/')"
+          echo "OPENCODE_VERSION=${base}" >> "$GITHUB_ENV"
+          echo "engine base version: ${base}"
+
       - name: Build engine (all platforms, TUI; web UI skipped)
         run: bun packages/opencode/script/build.ts --skip-embed-web-ui
 
