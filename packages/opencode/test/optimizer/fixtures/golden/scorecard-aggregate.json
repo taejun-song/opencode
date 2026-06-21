@@ -1,0 +1,149 @@
+{
+  "checks": {
+    "adapter_preserves_intent": true,
+    "cited_paths_exist": true,
+    "cited_symbols_exist": true,
+    "no_hallucinated_refs": true,
+    "prior_feedback_addressed": true,
+    "sections_present": true,
+    "unsupported_claims_marked": true
+  },
+  "dims": [
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "architectural_correctness",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 3,
+      "baseline": 2,
+      "dimension": "evidence_quality",
+      "low_agreement": true,
+      "method": "majority",
+      "range": 2,
+      "vs_baseline": "above"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "citation_validity",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "file_symbol_grounding",
+      "low_agreement": true,
+      "method": "majority",
+      "range": 2,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 3,
+      "baseline": 2,
+      "dimension": "hallucination_avoidance",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "above"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "change_localization",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "usefulness",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "risk_awareness",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "fact_hypothesis_distinction",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "test_strategy_quality",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "feedback_responsiveness",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "spec_completeness",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "spec_maintainability",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "cross_agent_portability",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    },
+    {
+      "aggregate": 2,
+      "baseline": 2,
+      "dimension": "failure_mode_resistance",
+      "low_agreement": false,
+      "method": "majority",
+      "range": 0,
+      "vs_baseline": "equal"
+    }
+  ],
+  "verdict": "HELD"
+}

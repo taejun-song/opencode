@@ -1,0 +1,73 @@
+[
+  {
+    "case": {
+      "anchor": "Beta line.",
+      "edit_kind": "ADD",
+      "payload": " (added)"
+    },
+    "eligible": true,
+    "isTerminal": false,
+    "ok": true,
+    "result": "Alpha line.\nBeta line. (added)\nGamma line.\n"
+  },
+  {
+    "case": {
+      "edit_kind": "ADD",
+      "payload": "Appended.\n"
+    },
+    "eligible": true,
+    "isTerminal": false,
+    "ok": true,
+    "result": "Alpha line.\nBeta line.\nGamma line.\nAppended.\n"
+  },
+  {
+    "case": {
+      "anchor": "Gamma line.",
+      "edit_kind": "REPLACE",
+      "payload": "Delta line."
+    },
+    "eligible": true,
+    "isTerminal": false,
+    "ok": true,
+    "result": "Alpha line.\nBeta line.\nDelta line.\n"
+  },
+  {
+    "case": {
+      "anchor": "Alpha line.\n",
+      "edit_kind": "DELETE"
+    },
+    "eligible": true,
+    "isTerminal": false,
+    "ok": true,
+    "result": "Beta line.\nGamma line.\n"
+  },
+  {
+    "case": {
+      "anchor": "Missing.",
+      "edit_kind": "REPLACE",
+      "payload": "x"
+    },
+    "error": "ProposalError",
+    "ok": false
+  },
+  {
+    "case": {
+      "anchor": "Beta line.",
+      "edit_kind": "ADD",
+      "payload": " $& literal"
+    },
+    "eligible": true,
+    "isTerminal": false,
+    "ok": true,
+    "result": "Alpha line.\nBeta line. $& literal\nGamma line.\n"
+  },
+  {
+    "case": {
+      "edit_kind": "NONE"
+    },
+    "eligible": false,
+    "isTerminal": true,
+    "ok": true,
+    "result": "Alpha line.\nBeta line.\nGamma line.\n"
+  }
+]

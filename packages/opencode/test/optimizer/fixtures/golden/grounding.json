@@ -1,0 +1,97 @@
+{
+  "checks": {
+    "adapter_preserves_intent": true,
+    "cited_paths_exist": false,
+    "cited_symbols_exist": true,
+    "no_hallucinated_refs": false,
+    "prior_feedback_addressed": true,
+    "sections_present": false,
+    "unsupported_claims_marked": true
+  },
+  "citations": [
+    {
+      "kind": "line",
+      "line": 1,
+      "path": "calc.py",
+      "raw": "calc.py:1"
+    },
+    {
+      "kind": "line",
+      "line": 5,
+      "path": "calc.py",
+      "raw": "calc.py:5"
+    },
+    {
+      "end": 2,
+      "kind": "range",
+      "path": "calc.py",
+      "raw": "calc.py:1-2",
+      "start": 1
+    },
+    {
+      "kind": "line",
+      "line": 1,
+      "path": "calc.py",
+      "raw": "calc.py:1"
+    },
+    {
+      "kind": "line",
+      "line": 5,
+      "path": "calc.py",
+      "raw": "calc.py:5"
+    },
+    {
+      "kind": "symbol",
+      "path": "calc.py",
+      "raw": "calc.py:subtract",
+      "symbol": "subtract"
+    },
+    {
+      "kind": "symbol_line",
+      "line": 1,
+      "path": "calc.py",
+      "raw": "calc.py:add:1",
+      "symbol": "add"
+    },
+    {
+      "kind": "line",
+      "line": 99,
+      "path": "calc.py",
+      "raw": "calc.py:99"
+    },
+    {
+      "kind": "line",
+      "line": 3,
+      "path": "ghost.py",
+      "raw": "ghost.py:3"
+    },
+    {
+      "kind": "symbol",
+      "path": "calc.py",
+      "raw": "calc.py:add",
+      "symbol": "add"
+    }
+  ],
+  "failures": [
+    "cited \"calc.py:99\" \u2014 line 99 out of range (file has 6)",
+    "cited \"ghost.py:3\" \u2014 file \"ghost.py\" does not exist",
+    "required section \"Build and runtime commands\" missing",
+    "required section \"Major entrypoints\" missing",
+    "required section \"Architectural layers\" missing",
+    "required section \"Domain model\" missing",
+    "required section \"Data model\" missing",
+    "required section \"External integrations\" missing",
+    "required section \"Control-flow traces\" missing",
+    "required section \"Data-flow traces\" missing",
+    "required section \"Dependency map\" missing",
+    "required section \"Configuration map\" missing",
+    "required section \"Testing strategy\" missing",
+    "required section \"Deployment assumptions\" missing",
+    "required section \"Change-impact map\" missing",
+    "required section \"Known risks\" missing",
+    "required section \"Unknowns and unresolved questions\" missing"
+  ],
+  "rate": 0.8,
+  "resolvableTotal": 10,
+  "resolved": 8
+}
