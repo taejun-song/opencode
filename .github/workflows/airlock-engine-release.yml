@@ -77,5 +77,5 @@ jobs:
           else
             gh release create "$tag" out/* \
               --title "airlock engine $tag" \
-              --notes "airlock-branded opencode engine built from $tag (overlay on opencode v1.17.3)."
+              --notes "airlock-branded opencode engine built from $tag (overlay on opencode v${OPENCODE_VERSION})."
           fi
