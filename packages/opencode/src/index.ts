@@ -29,8 +29,17 @@ import { DbCommand } from "./cli/cmd/db"
 import { errorMessage } from "./util/error"
 import { PluginCommand } from "./cli/cmd/plug"
 import { Heap } from "./cli/heap"
+import { enforceLicense } from "./airlock/license"
 
 const args = hideBin(process.argv)
+
+// airlock overlay: engine-native time-limited license gate. Enforced for every
+// agent-serving invocation; version/help output stays available so the product
+// remains inspectable after expiry. (The bash wrapper gates too — this closes
+// the direct-invocation bypass.)
+if (!args.some((a) => a === "--version" || a === "-v" || a === "--help" || a === "-h") && args[0] !== "help") {
+  enforceLicense()
+}
 
 function show(out: string) {
   const text = out.trimStart()

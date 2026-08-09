@@ -54,6 +54,43 @@ jobs:
             echo "[$plat] branding OK"
           done
 
+      - name: License gate self-test (built binary must enforce; real minisign)
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq minisign
+          bin="packages/opencode/dist/opencode-linux-x64/bin/opencode"
+          T="$(mktemp -d)"
+          minisign -G -f -W -p "$T/airlock.pub" -s "$T/airlock.key"
+          mk() { # <expiry> <dir>
+            mkdir -p "$2"
+            printf 'licensee=SelfTest Corp\ncontract=CT-0001\nexpiry=%s\n' "$1" > "$2/license.txt"
+            minisign -S -s "$T/airlock.key" -m "$2/license.txt" -x "$2/license.txt.minisig"
+            cp "$T/airlock.pub" "$2/airlock.pub"
+          }
+          # 1) no license dir -> enforcement off (open build behavior)
+          out="$(AIRLOCK_LICENSE_DIR="$T/none" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats)"
+          [ "$out" = "license-ok" ] || { echo "FAIL: missing-verifier should be unlicensed-ok"; exit 1; }
+          # 2) valid license -> ok
+          mk 2099-01-01 "$T/valid"
+          out="$(AIRLOCK_LICENSE_DIR="$T/valid" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats)"
+          [ "$out" = "license-ok" ] || { echo "FAIL: valid license rejected"; exit 1; }
+          # 3) expired -> blocked, fail-loud
+          mk 2020-01-01 "$T/expired"
+          if AIRLOCK_LICENSE_DIR="$T/expired" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats 2>"$T/err"; then
+            echo "FAIL: expired license did not block"; exit 1
+          fi
+          grep -q 'license expired on 2020-01-01' "$T/err" || { echo "FAIL: no fail-loud expiry message"; cat "$T/err"; exit 1; }
+          # 4) tampered content -> blocked
+          mk 2099-01-01 "$T/tampered"
+          sed -i 's/expiry=2099/expiry=2199/' "$T/tampered/license.txt"
+          if AIRLOCK_LICENSE_DIR="$T/tampered" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats 2>"$T/err2"; then
+            echo "FAIL: tampered license did not block"; exit 1
+          fi
+          grep -q 'verification FAILED' "$T/err2" || { echo "FAIL: no tamper message"; cat "$T/err2"; exit 1; }
+          # 5) --version stays available even when expired (inspectability)
+          AIRLOCK_LICENSE_DIR="$T/expired" "$bin" --version >/dev/null
+          echo "license gate self-test OK (off/valid/expired/tampered/version-exempt)"
+
       - name: Package airlock-engine artifacts (5 target platforms)
         run: |
           set -euo pipefail
