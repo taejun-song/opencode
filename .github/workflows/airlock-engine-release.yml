@@ -3,6 +3,12 @@ name: airlock-engine-release
 # Build the airlock-branded engine from an overlay tag and publish per-platform
 # artifacts as a GitHub Release on this fork. Consumed by airlock's build.sh
 # (fetch_engine). Runs on GitHub runners — the airlock target never sees Bun/Node.
+#
+# Vendor builds: supply license_pubkey_b64 (base64 of a minisign public-key
+# FILE) + release_suffix. The key is baked into every binary at compile time —
+# license enforcement becomes MANDATORY (the on-disk pubkey is ignored) — and
+# the release is published under <overlay_tag><release_suffix> so it never
+# clobbers the public (unbaked) release for the same overlay tag.
 on:
   workflow_dispatch:
     inputs:
@@ -10,6 +16,14 @@ on:
         description: "overlay tag to build and release (e.g. airlock-v1.17.3-1)"
         required: true
         default: airlock-v1.17.3-1
+      license_pubkey_b64:
+        description: "vendor build: base64 of the minisign public-key file to bake in (empty = public build)"
+        required: false
+        default: ""
+      release_suffix:
+        description: "vendor build: release-tag suffix (e.g. -vendor1); required when a key is baked"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -19,6 +33,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Guard vendor-build inputs (key XOR-free, suffix required with key)
+        run: |
+          set -euo pipefail
+          key='${{ inputs.license_pubkey_b64 }}'
+          suf='${{ inputs.release_suffix }}'
+          if [ -n "$key" ] && [ -z "$suf" ]; then
+            echo "license_pubkey_b64 set but release_suffix empty — a baked build must not clobber the public tag"; exit 1
+          fi
+          if [ -z "$key" ] && [ -n "$suf" ]; then
+            echo "release_suffix set but no license_pubkey_b64 — suffix is only for baked vendor builds"; exit 1
+          fi
+
       - name: Checkout overlay tag
         uses: actions/checkout@v4
         with:
@@ -39,6 +65,8 @@ jobs:
           echo "engine base version: ${base}"
 
       - name: Build engine (all platforms, TUI; web UI skipped)
+        env:
+          AIRLOCK_LICENSE_PUBKEY_B64: ${{ inputs.license_pubkey_b64 }}
         run: bun packages/opencode/script/build.ts --skip-embed-web-ui
 
       - name: Verify branding (fail loud if any platform is not airlock-branded)
@@ -60,6 +88,17 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq minisign
           bin="packages/opencode/dist/opencode-linux-x64/bin/opencode"
           T="$(mktemp -d)"
+          if [ -n '${{ inputs.license_pubkey_b64 }}' ]; then
+            # Vendor (baked) build: enforcement must be MANDATORY. The workflow
+            # has no vendor secret key, so prove the deny paths + exemption.
+            if AIRLOCK_LICENSE_DIR="$T/none" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats 2>"$T/err"; then
+              echo "FAIL: baked build ran without a license"; exit 1
+            fi
+            grep -q 'no license installed' "$T/err" || { echo "FAIL: no mandatory-block message"; cat "$T/err"; exit 1; }
+            "$bin" --version >/dev/null
+            echo "baked-build self-test OK (mandatory block without license; --version exempt)"
+            exit 0
+          fi
           minisign -G -f -W -p "$T/airlock.pub" -s "$T/airlock.key"
           mk() { # <expiry> <dir>
             mkdir -p "$2"
@@ -103,16 +142,52 @@ jobs:
           done
           ls -la out
 
+      # Public builds only: prove the BAKING MECHANISM itself on every release —
+      # rebuild the host platform with a throwaway key baked in and assert
+      # mandatory enforcement (block/valid/expired). Runs after packaging so the
+      # published artifacts are untouched.
+      - name: Baked-key mechanism self-test (throwaway key, host-platform rebuild)
+        if: ${{ inputs.license_pubkey_b64 == '' }}
+        run: |
+          set -euo pipefail
+          T="$(mktemp -d)"
+          minisign -G -f -W -p "$T/airlock.pub" -s "$T/airlock.key"
+          export AIRLOCK_LICENSE_PUBKEY_B64="$(base64 -w0 "$T/airlock.pub")"
+          bun packages/opencode/script/build.ts --skip-embed-web-ui --single
+          bin="$(find packages/opencode/dist -type f -name opencode -path '*linux*' | head -n1)"
+          [ -n "$bin" ] || { echo "FAIL: no single-build output"; exit 1; }
+          # no license -> mandatory block (deleting the disk pubkey must not help: none exists here at all)
+          if AIRLOCK_LICENSE_DIR="$T/none" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats 2>"$T/err"; then
+            echo "FAIL: baked build ran without a license"; exit 1
+          fi
+          grep -q 'no license installed' "$T/err" || { echo "FAIL: no mandatory-block message"; cat "$T/err"; exit 1; }
+          # valid signed license -> ok (we hold the throwaway secret key)
+          mkdir -p "$T/valid"
+          printf 'licensee=Baked Corp\ncontract=CT-0002\nexpiry=2099-01-01\n' > "$T/valid/license.txt"
+          minisign -S -s "$T/airlock.key" -m "$T/valid/license.txt" -x "$T/valid/license.txt.minisig"
+          out="$(AIRLOCK_LICENSE_DIR="$T/valid" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats)"
+          [ "$out" = "license-ok" ] || { echo "FAIL: valid license rejected by baked build"; exit 1; }
+          # expired -> blocked
+          mkdir -p "$T/expired"
+          printf 'licensee=Baked Corp\ncontract=CT-0002\nexpiry=2020-01-01\n' > "$T/expired/license.txt"
+          minisign -S -s "$T/airlock.key" -m "$T/expired/license.txt" -x "$T/expired/license.txt.minisig"
+          if AIRLOCK_LICENSE_DIR="$T/expired" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats >/dev/null 2>&1; then
+            echo "FAIL: baked build accepted an expired license"; exit 1
+          fi
+          echo "baked-key mechanism OK (mandatory block / valid allows / expired blocks)"
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tag="${{ inputs.overlay_tag }}"
+          tag="${{ inputs.overlay_tag }}${{ inputs.release_suffix }}"
+          baked=""
+          [ -n '${{ inputs.license_pubkey_b64 }}' ] && baked=" — VENDOR build (license key baked in; enforcement mandatory)"
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" out/* --clobber
           else
             gh release create "$tag" out/* \
               --title "airlock engine $tag" \
-              --notes "airlock-branded opencode engine built from $tag (overlay on opencode v${OPENCODE_VERSION})."
+              --notes "airlock-branded opencode engine built from ${{ inputs.overlay_tag }} (overlay on opencode v${OPENCODE_VERSION})${baked}."
           fi
