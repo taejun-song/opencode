@@ -196,6 +196,10 @@ for (const item of targets) {
       OTUI_TREE_SITTER_WORKER_PATH: bunfsRoot + treeSitterWorkerPath,
       OPENCODE_WORKER_PATH: workerPath,
       OPENCODE_CHANNEL: `'${Script.channel}'`,
+      // airlock overlay: optional vendor license public key baked in at build
+      // time. Empty (default) keeps the file-based opt-in semantics; non-empty
+      // makes enforcement mandatory (see src/airlock/license.ts).
+      AIRLOCK_LICENSE_PUBKEY_B64: JSON.stringify(process.env["AIRLOCK_LICENSE_PUBKEY_B64"] ?? ""),
       OPENCODE_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "",
       ...(item.os === "linux" ? { "process.env.OPENTUI_LIBC": JSON.stringify(item.abi ?? "glibc") } : {}),
     },

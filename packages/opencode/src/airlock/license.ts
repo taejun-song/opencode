@@ -22,6 +22,13 @@ import path from "node:path"
 
 const PLACEHOLDER = "DEV PLACEHOLDER"
 
+// Build-time define (script/build.ts): base64 of a minisign public-key FILE.
+// Empty in public/dev builds. When a vendor bakes a real key, enforcement is
+// MANDATORY: the on-disk pubkey is ignored (deleting/replacing it changes
+// nothing) and a missing license blocks instead of running unlicensed.
+declare const AIRLOCK_LICENSE_PUBKEY_B64: string
+const BAKED_PUBKEY_B64: string = typeof AIRLOCK_LICENSE_PUBKEY_B64 !== "undefined" ? AIRLOCK_LICENSE_PUBKEY_B64 : ""
+
 function licenseDir(): string {
   return process.env["AIRLOCK_LICENSE_DIR"] ?? path.join(homedir(), ".local", "share", "airlock", "license")
 }
@@ -91,10 +98,16 @@ export function enforceLicense(): void {
     }
   }
 
-  // Enforcement is opt-in by build: no key, or the dev placeholder -> off.
-  if (!existsSync(pubPath)) return pass()
-  const pubText = readFileSync(pubPath, "utf8")
-  if (pubText.includes(PLACEHOLDER)) return pass()
+  // Vendor builds bake the key in: enforcement mandatory, disk pubkey ignored.
+  // Otherwise enforcement is opt-in by build: no key / dev placeholder -> off.
+  let pubText: string
+  if (BAKED_PUBKEY_B64 !== "") {
+    pubText = Buffer.from(BAKED_PUBKEY_B64, "base64").toString("utf8")
+  } else {
+    if (!existsSync(pubPath)) return pass()
+    pubText = readFileSync(pubPath, "utf8")
+    if (pubText.includes(PLACEHOLDER)) return pass()
+  }
 
   const pub = parsePubkey(pubText)
   if (!pub) fail("license verifier key is unreadable (airlock.pub is not a minisign public key)")
