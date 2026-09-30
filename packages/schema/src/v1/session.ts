@@ -58,6 +58,16 @@ export const ContextOverflowError = namedError("ContextOverflowError", {
   message: Schema.String,
   responseBody: Schema.optional(Schema.String),
 })
+// airlock overlay (feature 012): engine-side security check outcomes.
+export const SecurityPolicyError = namedError("SecurityPolicyError", {
+  message: Schema.String,
+  rule: Schema.optional(Schema.String),
+  event_id: Schema.optional(Schema.String),
+})
+export const SecurityUnavailableError = namedError("SecurityUnavailableError", {
+  message: Schema.String,
+  center_url: Schema.String,
+})
 export const ContentFilterError = namedError("ContentFilterError", {
   message: Schema.String,
 })
@@ -390,6 +400,8 @@ const AssistantErrorSchema = Schema.Union([
   StructuredOutputError.EffectSchema,
   ContextOverflowError.EffectSchema,
   ContentFilterError.EffectSchema,
+  SecurityPolicyError.EffectSchema,
+  SecurityUnavailableError.EffectSchema,
   APIError.EffectSchema,
 ]).annotate({ discriminator: "name" })
 type AssistantError = Schema.Schema.Type<typeof AssistantErrorSchema>

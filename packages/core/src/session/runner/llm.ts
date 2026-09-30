@@ -9,6 +9,7 @@ import {
   type ProviderErrorEvent,
 } from "@opencode-ai/llm"
 import { Cause, DateTime, Effect, FiberSet, Layer, Option, Semaphore, Stream } from "effect"
+import { securityCheck } from "../../airlock/security"
 import { AgentV2 } from "../../agent"
 import { Config } from "../../config"
 import { Database } from "../../database/database"
@@ -238,7 +239,14 @@ const layer = Layer.effect(
       const publish = (event: LLMEvent, outputPaths: ReadonlyArray<string> = []) =>
         withPublication(publisher.publish(event, outputPaths))
       let overflowFailure: ProviderErrorEvent | undefined
-      const providerStream = llm.stream(request).pipe(
+      // airlock overlay (feature 012): policy check before the provider call (v2 runner path).
+      const providerStream = Stream.unwrap(
+        Effect.tryPromise({
+          try: () =>
+            securityCheck({ sessionID: session.id, model: `${model.provider}/${model.id}`, messages: request.messages }),
+          catch: (e) => e as Error,
+        }).pipe(Effect.map(() => llm.stream(request))),
+      ).pipe(
         Stream.runForEach((event) =>
           Effect.gen(function* () {
             if (overflowFailure || publisher.hasProviderError()) return
