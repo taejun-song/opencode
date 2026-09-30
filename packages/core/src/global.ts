@@ -7,7 +7,7 @@ import { Flock } from "./util/flock"
 import { Flag } from "./flag/flag"
 import { makeGlobalNode } from "./effect/app-node"
 
-const app = "opencode"
+const app = "airlock"
 const data = path.join(xdgData!, app)
 const cache = path.join(xdgCache!, app)
 const config = path.join(xdgConfig!, app)
@@ -26,6 +26,9 @@ const paths = {
   config,
   state,
   tmp,
+  // airlock overlay: stems for config/project file + dir names (airlock.json, .airlock/)
+  appName: app,
+  projectDir: `.${app}`,
 }
 
 export const Path = paths
