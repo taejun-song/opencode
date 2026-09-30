@@ -79,8 +79,26 @@ jobs:
             # REQUIRE the airlock terminal-title; FORBID the upstream wordmark art row.
             LC_ALL=C grep -aqF 'setTerminalTitle("airlock")' "$bin" || { echo "[$plat] MISSING airlock title"; exit 1; }
             if LC_ALL=C grep -aqF '█▀▀█ █▀▀█ █▀▀█ █▀▀▄' "$bin"; then echo "[$plat] upstream wordmark art present"; exit 1; fi
+            # Layout markers (airlock feature 011): the on-disk layout is airlock-named.
+            # REQUIRE the airlock config dir; FORBID upstream config-dir/file/project-dir
+            # literals. (Bare "opencode.json" is NOT forbidden: upstream's brew/scoop
+            # upgrade URLs legitimately end in /opencode.json.)
+            LC_ALL=C grep -aqF '.config/airlock' "$bin" || { echo "[$plat] MISSING airlock config dir literal"; exit 1; }
+            for forbid in '.config/opencode' 'opencode.jsonc' '.opencode/commands' '.opencode/agents'; do
+              if LC_ALL=C grep -aqF -- "$forbid" "$bin"; then echo "[$plat] upstream layout literal present: ${forbid}"; exit 1; fi
+            done
             echo "[$plat] branding OK"
           done
+
+      - name: Brand sweep of --help (no upstream name in the engine's own help output)
+        run: |
+          set -euo pipefail
+          bin="packages/opencode/dist/opencode-linux-x64/bin/opencode"
+          T="$(mktemp -d)"
+          HOME="$T" "$bin" --help > "$T/help.txt" 2>&1
+          for sub in run serve attach tui; do HOME="$T" "$bin" "$sub" --help >> "$T/help.txt" 2>&1 || true; done
+          if grep -in 'opencode' "$T/help.txt"; then echo "FAIL: engine help output still names the upstream engine"; exit 1; fi
+          echo "help sweep OK ($(wc -l < "$T/help.txt") lines, no upstream name)"
 
       - name: License gate self-test (built binary must enforce; real minisign)
         run: |
