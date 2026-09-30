@@ -1,5 +1,11 @@
 import { Config } from "effect"
 
+// airlock overlay: AIRLOCK_* aliases for the engine's internal OPENCODE_* flags —
+// applied here, before any flag is read, so airlock tooling never sets an upstream-named variable.
+for (const [k, v] of Object.entries(process.env)) {
+  if (k.startsWith("AIRLOCK_") && v !== undefined) process.env["OPENCODE_" + k.slice(8)] ??= v
+}
+
 export function truthy(key: string) {
   const value = process.env[key]?.toLowerCase()
   return value === "true" || value === "1"
