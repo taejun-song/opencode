@@ -28,6 +28,7 @@ import * as Option from "effect/Option"
 import * as OtelTracer from "@effect/opentelemetry/Tracer"
 import { LLMAISDK } from "./llm/ai-sdk"
 import { LLMNativeRuntime } from "./llm/native-runtime"
+import { securityCheck } from "@opencode-ai/core/airlock/security"
 import { LLMRequestPrep } from "./llm/request"
 
 export const OUTPUT_TOKEN_MAX = ProviderTransform.OUTPUT_TOKEN_MAX
@@ -90,6 +91,19 @@ const live: Layer.Layer<
         small: (input.small ?? false).toString(),
         agent: input.agent.name,
         mode: input.agent.mode,
+      })
+
+      // airlock overlay (feature 012): every outbound request is policy-checked
+      // before any provider call; a deny/unavailable verdict fails the stream.
+      yield* Effect.tryPromise({
+        try: () =>
+          securityCheck({
+            sessionID: input.sessionID,
+            model: `${input.model.providerID}/${input.model.id}`,
+            agent: input.agent.name,
+            messages: input.messages,
+          }),
+        catch: (e) => e as Error,
       })
 
       const [language, cfg, item, info] = yield* Effect.all(

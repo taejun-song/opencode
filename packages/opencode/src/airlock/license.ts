@@ -29,6 +29,9 @@ const PLACEHOLDER = "DEV PLACEHOLDER"
 declare const AIRLOCK_LICENSE_PUBKEY_B64: string
 const BAKED_PUBKEY_B64: string = typeof AIRLOCK_LICENSE_PUBKEY_B64 !== "undefined" ? AIRLOCK_LICENSE_PUBKEY_B64 : ""
 
+// Feature 012: the security check attributes events to the applied license's contract id.
+export { readLicenseFields } from "@opencode-ai/core/airlock/security"
+
 function licenseDir(): string {
   return process.env["AIRLOCK_LICENSE_DIR"] ?? path.join(homedir(), ".local", "share", "airlock", "license")
 }

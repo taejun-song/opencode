@@ -30,6 +30,7 @@ import { errorMessage } from "./util/error"
 import { PluginCommand } from "./cli/cmd/plug"
 import { Heap } from "./cli/heap"
 import { enforceLicense } from "./airlock/license"
+import { securitySelftest } from "@opencode-ai/core/airlock/security"
 
 const args = hideBin(process.argv)
 
@@ -39,6 +40,8 @@ const args = hideBin(process.argv)
 // the direct-invocation bypass.)
 if (!args.some((a) => a === "--version" || a === "-v" || a === "--help" || a === "-h") && args[0] !== "help") {
   enforceLicense()
+  // airlock overlay (feature 012): CI hook — one synthetic security check, verdict on stdout, exit.
+  if (process.env["AIRLOCK_SECURITY_SELFTEST"] === "1") await securitySelftest()
 }
 
 function show(out: string) {

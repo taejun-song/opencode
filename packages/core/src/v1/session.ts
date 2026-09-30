@@ -66,3 +66,13 @@ export const ContextOverflowError = NamedError.create("ContextOverflowError", {
   responseBody: Schema.optional(Schema.String),
 })
 export const ContentFilterError = NamedError.create("ContentFilterError", { message: Schema.String })
+// airlock overlay (feature 012): engine-side security check outcomes.
+export const SecurityPolicyError = NamedError.create("SecurityPolicyError", {
+  message: Schema.String,
+  rule: Schema.optional(Schema.String),
+  event_id: Schema.optional(Schema.String),
+})
+export const SecurityUnavailableError = NamedError.create("SecurityUnavailableError", {
+  message: Schema.String,
+  center_url: Schema.String,
+})
