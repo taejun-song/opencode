@@ -33,6 +33,16 @@ export const Info = Schema.Struct({
   $schema: Schema.optional(Schema.String).annotate({
     description: "JSON schema reference for configuration validation",
   }),
+  // airlock overlay (feature 012): deployment profile for the security center.
+  // Honoured ONLY from the admin-owned managed config (see @opencode-ai/core/airlock/security).
+  security_center: Schema.optional(
+    Schema.Struct({
+      center_url: Schema.String,
+      token: Schema.String,
+      fail_mode: Schema.optional(Schema.Literals(["strict", "permissive"])),
+      timeout_ms: Schema.optional(Schema.Number),
+    }),
+  ).annotate({ description: "airlock security center deployment profile (managed config only)" }),
   shell: Schema.optional(Schema.String).annotate({ description: "Default shell to use for terminal and bash tool" }),
   logLevel: Schema.optional(LogLevelRef).annotate({ description: "Log level" }),
   server: Schema.optional(ConfigServerV1.Server).annotate({
