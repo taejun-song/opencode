@@ -269,7 +269,7 @@ export async function securitySelftest(): Promise<never> {
   } catch (e) {
     if (SecurityUnavailableError.isInstance(e)) {
       process.stdout.write(`security-unavailable:${profile.fail_mode}\n`)
-      process.stderr.write(`[airlock] ${(e as Error).message}\n`)
+      process.stderr.write(`[airlock] ${(e as unknown as { data: { message: string } }).data.message}\n`)
       process.exit(profile.fail_mode === "strict" ? 1 : 0)
     }
     if (SecurityPolicyError.isInstance(e)) {
