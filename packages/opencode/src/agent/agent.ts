@@ -5,6 +5,7 @@ import { serviceUse } from "@opencode-ai/core/effect/service-use"
 import { Provider } from "@/provider/provider"
 
 import { generateObject, streamObject, type ModelMessage } from "ai"
+import { securityCheck } from "@opencode-ai/core/airlock/security"
 import { Truncate } from "@/tool/truncate"
 import { Auth } from "../auth"
 import { ProviderTransform } from "@/provider/transform"
@@ -414,6 +415,12 @@ const layer = Layer.effect(
             Schema.toStandardJSONSchemaV1(GeneratedAgent),
           ),
         } satisfies Parameters<typeof generateObject>[0]
+
+        // airlock overlay (feature 012): `agent generate` bypasses LLM.run — check here too.
+        yield* Effect.tryPromise({
+          try: () => securityCheck({ model: `${model.providerID}/${model.id}`, messages: params.messages }),
+          catch: (e) => e as Error,
+        })
 
         if (isOpenaiOauth) {
           return yield* Effect.promise(async () => {

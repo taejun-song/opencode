@@ -11,6 +11,8 @@ import {
   Info,
   OutputLengthError,
   Part,
+  SecurityPolicyError,
+  SecurityUnavailableError,
   SubtaskPart,
   User,
   WithParts,
@@ -621,6 +623,11 @@ export function fromError(
       ).toObject()
     case OutputLengthError.isInstance(e):
       return e
+    // airlock overlay (feature 012): security verdicts render via error.data.message.
+    case SecurityPolicyError.isInstance(e):
+      return e.toObject()
+    case SecurityUnavailableError.isInstance(e):
+      return e.toObject()
     case LoadAPIKeyError.isInstance(e):
       return new AuthError(
         {
