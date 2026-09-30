@@ -54,6 +54,15 @@ export class Info extends Schema.Class<Info>("Config.Info")({
     .annotate({
       description: "Enterprise sharing service configuration",
     }),
+  // airlock overlay (feature 012): kept so the decoder does not drop it; read from managed config only.
+  security_center: Schema.Struct({
+    center_url: Schema.String,
+    token: Schema.String,
+    fail_mode: Schema.Literals(["strict", "permissive"]).pipe(Schema.optional),
+    timeout_ms: Schema.Number.pipe(Schema.optional),
+  })
+    .pipe(Schema.optional)
+    .annotate({ description: "airlock security center deployment profile (managed config only)" }),
   username: Schema.String.pipe(Schema.optional).annotate({
     description: "Username displayed in conversations and used for telemetry identity",
   }),
