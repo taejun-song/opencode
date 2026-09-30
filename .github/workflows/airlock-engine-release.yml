@@ -148,6 +148,76 @@ jobs:
           AIRLOCK_LICENSE_DIR="$T/expired" "$bin" --version >/dev/null
           echo "license gate self-test OK (off/valid/expired/tampered/version-exempt)"
 
+      - name: Security check self-test (engine-side policy gate vs stub center)
+        run: |
+          set -euo pipefail
+          bin="packages/opencode/dist/opencode-linux-x64/bin/opencode"
+          stub=".github/airlock/stub-center.py"
+          T="$(mktemp -d)"
+          export HOME="$T/home" XDG_STATE_HOME="$T/state"
+          mkdir -p "$HOME" "$XDG_STATE_HOME"
+          PIDS=()
+          trap 'kill "${PIDS[@]}" 2>/dev/null || true' EXIT
+          start() { # <port> <mode>
+            python3 "$stub" --port "$1" --mode "$2" --record "$T/rec-$2.jsonl" >/dev/null 2>&1 &
+            PIDS+=($!)
+            for _ in $(seq 1 50); do
+              if curl -fsS "http://127.0.0.1:$1/v1/health" >/dev/null 2>&1; then return 0; fi
+              sleep 0.1
+            done
+            echo "stub $2 did not start"; exit 1
+          }
+          start 8461 allow; start 8462 deny; start 8463 unauth; start 8464 hang
+          profile() { # <dir> <port> <mode> [timeout_ms]
+            mkdir -p "$1"
+            printf '{"security_center":{"center_url":"http://127.0.0.1:%s","token":"tok","fail_mode":"%s","timeout_ms":%s}}\n' \
+              "$2" "$3" "${4:-3000}" > "$1/airlock.json"
+          }
+          selftest() { AIRLOCK_TEST_MANAGED_CONFIG_DIR="$1" AIRLOCK_SECURITY_SELFTEST=1 "$bin" stats >"$T/out" 2>"$T/err"; }
+          fail() { echo "FAIL: $1"; cat "$T/out" "$T/err" 2>/dev/null; exit 1; }
+          # 1) allow -> proceeds; request body carries identity + hash + version
+          profile "$T/p-allow" 8461 strict
+          selftest "$T/p-allow" || fail "allow should exit 0"
+          [ "$(cat "$T/out")" = "security-allow" ] || fail "allow verdict"
+          for k in agent_id content_sha256 engine_version; do
+            grep -q "\"$k\"" "$T/rec-allow.jsonl" || fail "check body lacks $k"
+          done
+          # 2) deny -> blocked before any provider call, rule named
+          profile "$T/p-deny" 8462 strict
+          if selftest "$T/p-deny"; then fail "deny should exit 1"; fi
+          [ "$(cat "$T/out")" = "security-deny:stub-rule" ] || fail "deny verdict"
+          grep -q 'blocked by organizational policy: stub-rule' "$T/err" || fail "deny message"
+          # 3) bad credential -> blocked in every mode
+          profile "$T/p-unauth" 8463 permissive
+          if selftest "$T/p-unauth"; then fail "unauth should exit 1"; fi
+          grep -q "rejected this agent's credential" "$T/err" || fail "unauth message"
+          # 4) center hangs, strict -> blocked with the unavailable message
+          profile "$T/p-hang-strict" 8464 strict 1000
+          if selftest "$T/p-hang-strict"; then fail "hang+strict should exit 1"; fi
+          [ "$(cat "$T/out")" = "security-unavailable:strict" ] || fail "strict verdict"
+          grep -q 'security check unavailable' "$T/err" || fail "strict message"
+          # 5) center hangs, permissive -> proceeds + local journal (hash+excerpt, never full content)
+          profile "$T/p-hang-perm" 8464 permissive 1000
+          selftest "$T/p-hang-perm" || fail "hang+permissive should exit 0"
+          [ "$(cat "$T/out")" = "security-unavailable:permissive" ] || fail "permissive verdict"
+          J="$XDG_STATE_HOME/airlock/security-journal.jsonl"
+          grep -q '"verdict":"unavailable-permissive"' "$J" || fail "journal entry missing"
+          grep -q '"excerpt"' "$J" || fail "journal lacks excerpt"
+          if grep -q '"content":' "$J"; then fail "journal must not hold full content"; fi
+          # 6) next successful contact syncs the journal and empties it
+          selftest "$T/p-allow" || fail "allow after journal should exit 0"
+          grep -q '"/v1/events"' "$T/rec-allow.jsonl" || fail "journal was not posted to /v1/events"
+          grep -q 'unavailable-permissive' "$T/rec-allow.jsonl" || fail "posted batch lacks the journal entry"
+          [ ! -s "$J" ] || fail "journal not emptied after sync"
+          # 7) a REAL managed profile wins over the test override (no developer bypass)
+          if AIRLOCK_SECURITY_SELFTEST_MANAGED_DIR="$T/p-deny" AIRLOCK_TEST_MANAGED_CONFIG_DIR="$T/p-allow" \
+               AIRLOCK_SECURITY_SELFTEST=1 "$bin" stats >"$T/out" 2>/dev/null; then fail "override must not beat the real profile"; fi
+          [ "$(cat "$T/out")" = "security-deny:stub-rule" ] || fail "precedence verdict"
+          # 8) no profile anywhere -> feature off
+          selftest "$T/none" || fail "no profile should exit 0"
+          [ "$(cat "$T/out")" = "security-off" ] || fail "off verdict"
+          echo "security check self-test OK (allow/deny/unauth/strict/permissive+journal+sync/precedence/off)"
+
       - name: Package airlock-engine artifacts (5 target platforms)
         run: |
           set -euo pipefail
