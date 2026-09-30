@@ -23,14 +23,14 @@ shape before writing config, **fetch that URL and read the schema directly**
 rather than guessing. opencode hard-fails on invalid config, so the cost of a
 wrong shape is a broken startup.
 
-Independently, every `opencode.json` should declare
+Independently, every `airlock.json` should declare
 `"$schema": "https://opencode.ai/config.json"` so the user's editor catches
 mistakes as they type.
 
 ## Applying changes
 
 Config is loaded once when opencode starts and is not hot-reloaded. After
-saving changes to `opencode.json`, an agent file, a skill, a plugin, or any
+saving changes to `airlock.json`, an agent file, a skill, a plugin, or any
 other config-time file, **tell the user to quit and restart opencode** for
 the changes to take effect. The running session will keep using the
 already-loaded config until then.
@@ -39,20 +39,20 @@ already-loaded config until then.
 
 | Scope                         | Path                                                                                                                      |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Project config                | `./opencode.json`, `./opencode.jsonc`, or `.opencode/opencode.json` (opencode walks up from the cwd to the worktree root) |
-| Global config                 | `~/.config/opencode/opencode.json` or `~/.config/opencode/opencode.jsonc` (NOT `~/.opencode/`)                            |
-| Project agents                | `.opencode/agent/<name>.md` or `.opencode/agents/<name>.md`                                                               |
-| Global agents                 | `~/.config/opencode/agent(s)/<name>.md`                                                                                   |
-| Project commands              | `.opencode/command/<name>.md` or `.opencode/commands/<name>.md`                                                           |
-| Global commands               | `~/.config/opencode/command(s)/<name>.md`                                                                                 |
-| Project skills                | `.opencode/skill(s)/<name>/SKILL.md`                                                                                      |
-| Global skills                 | `~/.config/opencode/skill(s)/<name>/SKILL.md`                                                                             |
+| Project config                | `./airlock.json`, `./airlock.jsonc`, or `.airlock/airlock.json` (opencode walks up from the cwd to the worktree root) |
+| Global config                 | `~/.config/airlock/airlock.json` or `~/.config/airlock/airlock.jsonc` (NOT `~/.airlock/`)                            |
+| Project agents                | `.airlock/agent/<name>.md` or `.airlock/agents/<name>.md`                                                               |
+| Global agents                 | `~/.config/airlock/agent(s)/<name>.md`                                                                                   |
+| Project commands              | `.airlock/command/<name>.md` or `.airlock/commands/<name>.md`                                                           |
+| Global commands               | `~/.config/airlock/command(s)/<name>.md`                                                                                 |
+| Project skills                | `.airlock/skill(s)/<name>/SKILL.md`                                                                                      |
+| Global skills                 | `~/.config/airlock/skill(s)/<name>/SKILL.md`                                                                             |
 | External skills (auto-loaded) | `~/.claude/skills/<name>/SKILL.md`, `~/.agents/skills/<name>/SKILL.md`                                                    |
 
 Configs from each scope are deep-merged. Project overrides global. Unknown
-top-level keys in `opencode.json` are rejected with `ConfigInvalidError`.
+top-level keys in `airlock.json` are rejected with `ConfigInvalidError`.
 
-## opencode.json
+## airlock.json
 
 Every field is optional.
 
@@ -71,7 +71,7 @@ Every field is optional.
   "instructions": ["AGENTS.md", "docs/style.md"],
 
   "skills": {
-    "paths": [".opencode/skills", "/abs/path/to/skills"],
+    "paths": [".airlock/skills", "/abs/path/to/skills"],
     "urls": ["https://example.com/.well-known/skills/"]
   },
 
@@ -165,7 +165,7 @@ file is named `SKILL.md` exactly, and lives in its own folder named after the
 skill:
 
 ```
-.opencode/skills/my-skill/SKILL.md
+.airlock/skills/my-skill/SKILL.md
 ```
 
 Frontmatter:
@@ -225,7 +225,7 @@ Local `path` values may be relative to the declaring config, absolute, or use
 
 Two ways to define an agent. Use the file form for anything non-trivial.
 
-### Inline (in `opencode.json`)
+### Inline (in `airlock.json`)
 
 ```json
 {
@@ -244,7 +244,7 @@ Two ways to define an agent. Use the file form for anything non-trivial.
 ### File
 
 ```
-.opencode/agent/my-reviewer.md      OR     .opencode/agents/my-reviewer.md
+.airlock/agent/my-reviewer.md      OR     .airlock/agents/my-reviewer.md
 ```
 
 ```markdown
@@ -286,7 +286,7 @@ opencode's command loader scans for `**/*.md` inside command directories. The
 file is named after the command, and lives directly inside the `command` folder:
 
 ```
-.opencode/command/deploy.md
+.airlock/command/deploy.md
 ```
 
 Frontmatter:
@@ -320,7 +320,7 @@ model: anthropic/claude-sonnet-4-6
 ```
 
 Auto-discovered plugins (no config entry needed): any `*.ts` or `*.js` file in
-`.opencode/plugin/` or `.opencode/plugins/`.
+`.airlock/plugin/` or `.airlock/plugins/`.
 
 A plugin module exports `default` (or any named export) of type
 `Plugin = (input: PluginInput, options?) => Promise<Hooks>`. The export is a
@@ -426,7 +426,7 @@ the `plan` agent's permission ruleset (`edit: deny *`).
 
 When a user's config is broken and opencode won't start, these env vars help:
 
-- `OPENCODE_DISABLE_PROJECT_CONFIG=1`: skip the project's local `opencode.json`
+- `OPENCODE_DISABLE_PROJECT_CONFIG=1`: skip the project's local `airlock.json`
   and start from globals only. Run from the project directory, opencode loads,
   the user edits the broken file, then they restart without the flag.
 - `OPENCODE_CONFIG=/path/to/file.json`: load an additional explicit config.
@@ -445,7 +445,7 @@ When a user's config is broken and opencode won't start, these env vars help:
   `https://opencode.ai/config.json` and read the schema rather than guessing.
 - Preserve `$schema` and any existing fields the user did not ask to change.
 - For agent, command, skill, and plugin definitions, prefer creating new files
-  in the correct location over inlining everything in `opencode.json`.
+  in the correct location over inlining everything in `airlock.json`.
 - If the user's existing config is malformed, point them at the env-var escape
   hatches above so they can edit from inside opencode without breaking their
   session.
