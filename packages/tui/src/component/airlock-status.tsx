@@ -10,7 +10,7 @@ type Part = { text: string; fg: keyof Theme; bold?: boolean }
 export function statusParts(status: Status, width: number): Part[] {
   const short = width <= 80
   const sep: Part = { text: " · ", fg: "borderActive" }
-  const out: Part[] = [{ text: "⛨ ", fg: "secondary", bold: true }]
+  const out: Part[] = [{ text: "◆ ", fg: "secondary", bold: true }]
   const lic = status.license
   const days: Part | undefined =
     lic.state === "off"
@@ -49,8 +49,10 @@ export function AirlockStatusView(props: { status: Status; theme: Theme; width: 
 
 const cached = airlockStatus()
 
-export function AirlockStatus() {
+// compact: the session prompt row shares space with the spinner, tokens and the sidebar,
+// so it always uses the short form there.
+export function AirlockStatus(props: { compact?: boolean }) {
   const { theme } = useTheme()
   const dims = useTerminalDimensions()
-  return <AirlockStatusView status={cached} theme={theme} width={dims().width} />
+  return <AirlockStatusView status={cached} theme={theme} width={props.compact ? 80 : dims().width} />
 }

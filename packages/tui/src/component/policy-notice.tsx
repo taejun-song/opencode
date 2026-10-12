@@ -20,7 +20,7 @@ export function PolicyNotice(props: { error: ErrorLike; theme: Theme }) {
   const message = String(data["message"] ?? "")
   if (props.error?.name === "SecurityUnavailableError") {
     return (
-      <box border borderStyle="rounded" borderColor={t.error} backgroundColor={t.backgroundPanel} title=" ⛨ security check unavailable " paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1} marginTop={1}>
+      <box border borderStyle="rounded" borderColor={t.error} backgroundColor={t.backgroundPanel} title=" ◆ security check unavailable " paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1} marginTop={1}>
         <text>
           <span style={{ fg: t.textMuted }}>{"center    "}</span>
           <span style={{ fg: t.text }}>{String(data["center_url"] ?? "")}</span>
@@ -32,7 +32,7 @@ export function PolicyNotice(props: { error: ErrorLike; theme: Theme }) {
   const rule = String(data["rule"] ?? "")
   const event = String(data["event_id"] ?? "")
   return (
-    <box border borderStyle="rounded" borderColor={t.warning} backgroundColor={t.backgroundPanel} title=" ⛨ blocked by policy " paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1} marginTop={1}>
+    <box border borderStyle="rounded" borderColor={t.warning} backgroundColor={t.backgroundPanel} title=" ◆ blocked by policy " paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1} marginTop={1}>
       {rule ? (
         <text>
           <span style={{ fg: t.textMuted }}>{"rule      "}</span>

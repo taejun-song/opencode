@@ -63,7 +63,7 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
         <span style={{ fg: theme().text }}>{path().name}</span>
       </text>
       <text fg={theme().textMuted}>
-        <span style={{ fg: theme().secondary }}>⛨</span> <span style={{ fg: theme().primary }}>
+        <span style={{ fg: theme().secondary }}>◆</span> <span style={{ fg: theme().primary }}>
           <b>air</b>
         </span>
         <span style={{ fg: theme().secondary }}>

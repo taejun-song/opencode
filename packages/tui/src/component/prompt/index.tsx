@@ -1677,7 +1677,7 @@ export function Prompt(props: PromptProps) {
                     </Match>
                   </Switch>
                   <Show when={props.sessionID}>
-                    <AirlockStatus />
+                    <AirlockStatus compact />
                   </Show>
                   <text fg={theme.text}>
                     {paletteShortcut()} <span style={{ fg: theme.textMuted }}>commands</span>

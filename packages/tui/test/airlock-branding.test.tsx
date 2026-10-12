@@ -86,7 +86,7 @@ for (const size of SIZES) {
       const out = await frame(size.width, size.height, () => (
         <AirlockStatusView status={status} theme={theme} width={size.width} />
       ))
-      expect(out).toContain("⛨")
+      expect(out).toContain("◆")
       expect(out).toContain("291d")
       expect(out).toContain("strict")
       if (size.width > 80) {

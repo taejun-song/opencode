@@ -89,7 +89,7 @@ export function Sidebar(props: { sessionID: string; overlay?: boolean }) {
         <box flexShrink={0} gap={1} paddingTop={1}>
           <pluginRuntime.Slot name="sidebar_footer" mode="single_winner" session_id={props.sessionID}>
             <text fg={theme.textMuted}>
-              <span style={{ fg: theme.secondary }}>⛨</span> <span style={{ fg: theme.primary }}>
+              <span style={{ fg: theme.secondary }}>◆</span> <span style={{ fg: theme.primary }}>
                 <b>air</b>
               </span>
               <span style={{ fg: theme.secondary }}>
