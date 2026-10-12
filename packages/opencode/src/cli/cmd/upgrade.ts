@@ -6,7 +6,7 @@ import { InstallationVersion } from "@opencode-ai/core/installation/version"
 
 export const UpgradeCommand = {
   command: "upgrade [target]",
-  describe: "upgrade airlock-engine to the latest or a specific version",
+  describe: "explain how airlock-engine is updated (self-upgrade is disabled)",
   builder: (yargs: Argv) => {
     return yargs
       .positional("target", {
@@ -20,11 +20,18 @@ export const UpgradeCommand = {
         choices: ["curl", "npm", "pnpm", "bun", "brew", "choco", "scoop"],
       })
       .option("major", {
-        describe: "upgrade to OpenCode 2 and remove OpenCode 1",
+        describe: "not supported in airlock",
         type: "boolean",
       })
   },
-  handler: async (args: { target?: string; method?: string; major?: boolean }) => {
+  handler: async (_args: { target?: string; method?: string; major?: boolean }) => {
+    // airlock: the engine is updated only by installing a new airlock bundle (air-gapped,
+    // signed, pinned). Self-upgrade would fetch from the internet and could replace airlock
+    // with stock upstream, so this command never downloads anything.
+    UI.println("airlock-engine is updated by installing a new airlock bundle: run install.sh from the new bundle.")
+    UI.println("Self-upgrade is disabled in airlock (no internet access, no package-manager installs).")
+    return
+    // eslint-disable-next-line no-unreachable
     UI.empty()
     UI.println(UI.logo("  "))
     UI.empty()

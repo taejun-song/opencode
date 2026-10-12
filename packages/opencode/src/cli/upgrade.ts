@@ -19,6 +19,8 @@ export function shouldNotify(input: {
 
 // Returns undefined when checks are disabled or fail, so the TUI only suggests OpenCode 2 after a successful check.
 export async function upgrade() {
+  // airlock: never check for or suggest upstream updates (air-gapped; updates ship as bundles).
+  if (process.env["AIRLOCK_ALLOW_UPDATE_CHECK"] !== "1") return
   const config = await AppRuntime.runPromise(Config.Service.use((cfg) => cfg.getGlobal()))
   if (config.autoupdate === false || Flag.OPENCODE_DISABLE_AUTOUPDATE) return
   const latest = await Installation.latest(await Installation.method()).catch(() => {})

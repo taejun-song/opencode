@@ -299,7 +299,12 @@ export const TuiThreadCommand = cmd({
         return
       }
 
-      const updater = createUpdater(async () => await client.call("checkUpgrade", { directory: cwd }))
+      // airlock: no update checks, notices or /update command — the engine ships only in
+      // signed airlock bundles and the target is air-gapped.
+      const updater =
+        process.env["AIRLOCK_ALLOW_UPDATE_CHECK"] === "1"
+          ? createUpdater(async () => await client.call("checkUpgrade", { directory: cwd }))
+          : undefined
 
       try {
         const { Effect } = await import("effect")
