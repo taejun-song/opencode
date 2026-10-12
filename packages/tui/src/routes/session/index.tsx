@@ -1,3 +1,4 @@
+import { PolicyNotice, isPolicyError } from "../../component/policy-notice"
 import {
   batch,
   createContext,
@@ -89,7 +90,8 @@ const GO_UPSELL_FREE_TIER_DONT_SHOW = "go_upsell_dont_show"
 const GO_UPSELL_ACCOUNT_RATE_LIMIT_LAST_SEEN_AT = "go_upsell_account_rate_limit_last_seen_at"
 const GO_UPSELL_ACCOUNT_RATE_LIMIT_DONT_SHOW = "go_upsell_account_rate_limit_dont_show"
 const GO_UPSELL_WINDOW = 86_400_000 // 24 hrs
-const GO_UPSELL_PROVIDERS = new Set(["opencode", "opencode-go"])
+// airlock: no upstream subscription upsell on rate limits (air-gapped product).
+const GO_UPSELL_PROVIDERS = new Set<string>()
 
 export const alwaysSeparate = new WeakSet<BoxRenderable>()
 
@@ -1530,7 +1532,16 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
           </text>
         </box>
       </Show>
-      <Show when={props.message.error && props.message.error.name !== "MessageAbortedError"}>
+      <Show when={isPolicyError(props.message.error as any)}>
+        <box ref={(el: BoxRenderable) => alwaysSeparate.add(el)}>
+          <PolicyNotice error={props.message.error as any} theme={theme} />
+        </box>
+      </Show>
+      <Show
+        when={
+          props.message.error && props.message.error.name !== "MessageAbortedError" && !isPolicyError(props.message.error as any)
+        }
+      >
         <box
           ref={(el: BoxRenderable) => alwaysSeparate.add(el)}
           border={["left"]}

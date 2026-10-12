@@ -83,6 +83,9 @@ function exponential(attempt: number, random: number) {
 }
 
 export function retryable(error: Err, provider: string) {
+  // airlock: security-center outcomes are final decisions, never transient provider errors
+  // ("security check unavailable" must not be retried as "Provider is overloaded").
+  if (error.name === "SecurityPolicyError" || error.name === "SecurityUnavailableError") return undefined
   // context overflow errors should not be retried
   if (SessionV1.ContextOverflowError.isInstance(error)) return undefined
   if (SessionV1.APIError.isInstance(error)) {

@@ -519,3 +519,24 @@ describe("session.message-v2.fromError", () => {
     })
   })
 })
+
+describe("airlock: security-center errors are never retried", () => {
+  test("SecurityUnavailableError (message contains 'unavailable') is not retryable", () => {
+    const err = {
+      name: "SecurityUnavailableError",
+      data: {
+        message:
+          "security check unavailable (http://seccenter.intranet:8447); prompts are blocked until the security center is reachable",
+        center_url: "http://seccenter.intranet:8447",
+      },
+    } as unknown as ReturnType<NamedError["toObject"]>
+    expect(SessionRetry.retryable(err, "intranet")).toBeUndefined()
+  })
+  test("SecurityPolicyError is not retryable", () => {
+    const err = {
+      name: "SecurityPolicyError",
+      data: { message: "blocked by organizational policy: no-secrets — x (event 01A)", rule: "no-secrets" },
+    } as unknown as ReturnType<NamedError["toObject"]>
+    expect(SessionRetry.retryable(err, "intranet")).toBeUndefined()
+  })
+})
