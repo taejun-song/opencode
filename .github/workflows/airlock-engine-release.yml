@@ -29,7 +29,40 @@ permissions:
   contents: write
 
 jobs:
+  # airlock visual identity (airlock feature 015): the airlock theme, home tagline, status
+  # segment, policy notice and the absence of upstream promotions are asserted on Linux and
+  # native Windows before any engine is built or published.
+  branding-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout overlay tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.overlay_tag }}
+
+      - name: Setup Bun (pinned)
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: airlock branding test (80x24 and 120x40)
+        working-directory: packages/tui
+        run: bun test test/airlock-branding.test.tsx
+
+      - name: Security errors are never retried
+        working-directory: packages/opencode
+        run: bun test test/session/retry.test.ts
+
   build-release:
+    needs: branding-test
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
