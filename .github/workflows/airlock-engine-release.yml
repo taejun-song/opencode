@@ -191,8 +191,8 @@ jobs:
           bin="packages/opencode/dist/opencode-linux-x64/bin/opencode"
           stub=".github/airlock/stub-center.py"
           T="$(mktemp -d)"
-          export HOME="$T/home" XDG_STATE_HOME="$T/state"
-          mkdir -p "$HOME" "$XDG_STATE_HOME"
+          export HOME="$T/home"
+          mkdir -p "$HOME"
           PIDS=()
           trap 'kill "${PIDS[@]}" 2>/dev/null || true' EXIT
           start() { # <port> <mode>
@@ -237,7 +237,7 @@ jobs:
           profile "$T/p-hang-perm" 8464 permissive 1000
           selftest "$T/p-hang-perm" || fail "hang+permissive should exit 0"
           [ "$(cat "$T/out")" = "security-unavailable:permissive" ] || fail "permissive verdict"
-          J="$XDG_STATE_HOME/airlock/security-journal.jsonl"
+          J="$HOME/.local/state/airlock/security-journal.jsonl"
           grep -q '"verdict":"unavailable-permissive"' "$J" || fail "journal entry missing"
           grep -q '"excerpt"' "$J" || fail "journal lacks excerpt"
           if grep -q '"content":' "$J"; then fail "journal must not hold full content"; fi
