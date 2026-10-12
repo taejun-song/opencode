@@ -8,10 +8,17 @@ import { Flag } from "./flag/flag"
 import { makeGlobalNode } from "./effect/app-node"
 
 const app = "airlock"
-const data = path.join(xdgData!, app)
-const cache = path.join(xdgCache!, app)
-const config = path.join(xdgConfig!, app)
-const state = path.join(xdgState!, app)
+// airlock: the layout is $HOME-relative on every platform (installer, doctor and uninstall
+// write exactly these paths). XDG_* overrides are honoured only when AIRLOCK_HONOR_XDG=1;
+// otherwise a set XDG_CONFIG_HOME would hide the installed config and the engine would fall
+// back to an upstream cloud provider on an air-gapped machine.
+const honorXdg = process.env["AIRLOCK_HONOR_XDG"] === "1"
+const homeDir = process.env["OPENCODE_TEST_HOME"] ?? os.homedir()
+const root = (xdg: string | undefined, rel: string) => (honorXdg && xdg ? xdg : path.join(homeDir, rel))
+const data = path.join(root(xdgData, ".local/share"), app)
+const cache = path.join(root(xdgCache, ".cache"), app)
+const config = path.join(root(xdgConfig, ".config"), app)
+const state = path.join(root(xdgState, ".local/state"), app)
 const tmp = path.join(os.tmpdir(), app)
 
 const paths = {

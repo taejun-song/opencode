@@ -57,6 +57,10 @@ jobs:
         working-directory: packages/tui
         run: bun test test/airlock-branding.test.tsx
 
+      - name: airlock layout is $HOME-relative even when XDG_* is set
+        working-directory: packages/core
+        run: bun test test/airlock-paths.test.ts
+
       - name: Security errors are never retried
         working-directory: packages/opencode
         run: bun test test/session/retry.test.ts
