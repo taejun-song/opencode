@@ -1,3 +1,4 @@
+import { DialogAlert } from "./ui/dialog-alert"
 import { render, TimeToFirstDraw, useRenderer, useTerminalDimensions } from "@opentui/solid"
 import { registerOpencodeSpinner } from "./component/register-spinner"
 import { createDefaultOpenTuiKeymap } from "@opentui/keymap/opentui"
@@ -62,7 +63,6 @@ import { KVProvider, useKV } from "./context/kv"
 import { UpdateNotificationProvider, useUpdateNotification, type UpdateSource } from "./context/update-notification"
 import * as Model from "./util/model"
 import { ArgsProvider, useArgs, type Args } from "./context/args"
-import { openUrl } from "@opencode-ai/core/open"
 import { PromptRefProvider, usePromptRef } from "./context/prompt"
 import { TuiConfigProvider, useTuiConfig, type TuiConfig } from "./config"
 import { createTuiApiAdapters } from "./plugin/adapters"
@@ -761,7 +761,7 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
         ? [
             {
               name: "opencode.update",
-              title: "Update OpenCode",
+              title: "Update airlock",
               slashName: "update",
               run: () => update.open?.(),
               category: "System",
@@ -816,10 +816,14 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
       },
       {
         name: "docs.open",
-        title: "Open docs",
+        title: "airlock help",
         run: () => {
-          openUrl("https://opencode.ai/docs").catch(() => {})
-          dialog.clear()
+          // airlock: air-gapped — no browser/docs link; point to the bundled help instead.
+          void DialogAlert.show(
+            dialog,
+            "airlock help",
+            "Run `airlock help` in a terminal for commands, and `airlock doctor` to check the install. Your administrator has the full airlock documentation.",
+          )
         },
         category: "System",
       },

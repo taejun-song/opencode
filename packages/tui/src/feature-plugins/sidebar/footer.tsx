@@ -53,14 +53,8 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
                 ✕
               </text>
             </box>
-            <text fg={theme().textMuted}>airlock includes free models so you can start immediately.</text>
-            <text fg={theme().textMuted}>
-              Connect from 75+ providers to use other models, including Claude, GPT, Gemini etc
-            </text>
-            <box flexDirection="row" gap={1} justifyContent="space-between">
-              <text fg={theme().text}>Connect provider</text>
-              <text fg={theme().textMuted}>/connect</text>
-            </box>
+            <text fg={theme().textMuted}>airlock talks only to your organization's intranet LLM.</text>
+            <text fg={theme().textMuted}>If no model is available, ask your administrator or run airlock doctor.</text>
           </box>
         </box>
       </Show>
@@ -69,9 +63,11 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
         <span style={{ fg: theme().text }}>{path().name}</span>
       </text>
       <text fg={theme().textMuted}>
-        <span style={{ fg: theme().success }}>•</span> <b>Open</b>
-        <span style={{ fg: theme().text }}>
-          <b>Code</b>
+        <span style={{ fg: theme().secondary }}>⛨</span> <span style={{ fg: theme().primary }}>
+          <b>air</b>
+        </span>
+        <span style={{ fg: theme().secondary }}>
+          <b>lock</b>
         </span>{" "}
         <span>{props.api.app.version}</span>
       </text>

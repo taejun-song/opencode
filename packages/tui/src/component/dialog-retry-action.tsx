@@ -7,7 +7,8 @@ import { Link } from "../ui/link"
 import { BgPulse } from "./bg-pulse"
 import { useBindings } from "../keymap"
 
-const GO_URL = "https://opencode.ai/go"
+// airlock: the upstream subscription upsell is disabled; this sentinel never matches a link.
+const GO_URL = "airlock:no-upsell"
 const PAD_X = 3
 const PAD_TOP_OUTER = 1
 const FOREGROUND_ALPHA = 186
