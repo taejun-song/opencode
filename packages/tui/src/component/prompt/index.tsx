@@ -1,3 +1,4 @@
+import { AirlockStatus } from "../airlock-status"
 import {
   BoxRenderable,
   RGBA,
@@ -1675,6 +1676,9 @@ export function Prompt(props: PromptProps) {
                       </text>
                     </Match>
                   </Switch>
+                  <Show when={props.sessionID}>
+                    <AirlockStatus />
+                  </Show>
                   <text fg={theme.text}>
                     {paletteShortcut()} <span style={{ fg: theme.textMuted }}>commands</span>
                   </text>

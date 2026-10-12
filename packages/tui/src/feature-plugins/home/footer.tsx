@@ -1,3 +1,4 @@
+import { AirlockStatus } from "../../component/airlock-status"
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { BuiltinTuiPlugin } from "../builtins"
 import { createMemo, Match, Show, Switch } from "solid-js"
@@ -76,6 +77,7 @@ function View(props: { api: TuiPluginApi }) {
       <Directory api={props.api} />
       <Mcp api={props.api} />
       <box flexGrow={1} />
+      <AirlockStatus />
       <Version api={props.api} />
     </box>
   )
