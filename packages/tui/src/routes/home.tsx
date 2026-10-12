@@ -1,6 +1,7 @@
 import { Prompt, type PromptRef } from "../component/prompt"
 import { createEffect, createMemo, createSignal, onMount, Show } from "solid-js"
 import { Logo } from "../component/logo"
+import { HomeTaglineRow } from "../component/airlock-brand"
 import { useSync } from "../context/sync"
 import { Toast } from "../ui/toast"
 import { useArgs } from "../context/args"
@@ -87,7 +88,7 @@ export function Home() {
           </pluginRuntime.Slot>
         </box>
         <box height={1} minHeight={0} flexShrink={1} />
-        <UpdateNotification width={logoWidth()} />
+        <HomeTaglineRow />
         <box width="100%" maxWidth={promptMaxWidth()} zIndex={1000} paddingTop={1} flexShrink={0}>
           <pluginRuntime.Slot name="home_prompt" mode="replace" ref={bind}>
             <Prompt ref={bind} right={<pluginRuntime.Slot name="home_prompt_right" />} placeholders={placeholder} />
