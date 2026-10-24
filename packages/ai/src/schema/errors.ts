@@ -143,6 +143,22 @@ export class TimeoutError extends Schema.TaggedError<TimeoutError>("AI.Error.Tim
   timeoutMs: Schema.optional(NonNegativeInt),
 }) {}
 
+/**
+ * airlock: the deployment's security center blocked the request (`deny`), rejected this agent's
+ * credential (`credential`), or could not be reached in strict mode (`unavailable`). Raised before any
+ * provider I/O and never retryable.
+ */
+export class SecurityPolicyError extends Schema.TaggedError<SecurityPolicyError>("AI.Error.SecurityPolicy")(
+  "SecurityPolicy",
+  {
+    ...ReasonFields,
+    kind: Schema.Literals(["deny", "credential", "unavailable", "too-large"]),
+    rule: Schema.optional(Schema.String),
+    eventId: Schema.optional(Schema.String),
+    centerUrl: Schema.optional(Schema.String),
+  },
+) {}
+
 export const AIErrorReason = Schema.Union([
   InvalidRequestError,
   UnsupportedOperationError,
@@ -156,6 +172,7 @@ export const AIErrorReason = Schema.Union([
   InvalidProviderOutputError,
   UnknownProviderError,
   TimeoutError,
+  SecurityPolicyError,
 ]).pipe(Schema.toTaggedUnion("_tag"))
 export type AIErrorReason = Schema.Schema.Type<typeof AIErrorReason>
 

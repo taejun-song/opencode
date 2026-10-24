@@ -111,6 +111,7 @@ export const isRetryable = (error: AIError) => {
     case "UnsupportedOperation":
     case "NoRoute":
     case "Timeout":
+    case "SecurityPolicy": // airlock: a policy verdict is final
       return false
     default: {
       const exhaustive: never = error.reason

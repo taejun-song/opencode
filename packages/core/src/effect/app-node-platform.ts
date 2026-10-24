@@ -1,4 +1,5 @@
 import { LLMClient, RequestExecutor } from "@opencode/ai/route"
+import { AirlockLLMClient } from "../airlock/llm-client.js"
 import { Effect, Layer } from "effect"
 import { FetchHttpClient, HttpClient } from "effect/http"
 import { Socket } from "effect/socket"
@@ -24,7 +25,8 @@ export const requestExecutor = makeGlobalNode({
   deps: [httpClient],
 })
 
-export const llmClient = makeGlobalNode({ service: LLMClient.Service, layer: LLMClient.layer, deps: [requestExecutor] })
+// airlock: every model request passes the security check first (feature 012).
+export const llmClient = makeGlobalNode({ service: LLMClient.Service, layer: AirlockLLMClient.layer, deps: [requestExecutor] })
 
 export const webSocketConstructor = makeGlobalNode({
   service: Socket.WebSocketConstructor,

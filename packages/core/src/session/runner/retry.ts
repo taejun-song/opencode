@@ -45,6 +45,8 @@ export const policy = (sessionID: SessionSchema.ID) =>
           decision: next.retry ? { retry: true, delay: next.delay } : { retry: false },
         }
         yield* input.hook(event)
+        // airlock: a security-center verdict is final; a plugin hook cannot turn it into a retry.
+        if (input.cause.reason._tag === "SecurityPolicy") return { retry: false as const }
         if (!event.decision.retry) return event.decision
         const normalized =
           Number.isFinite(event.decision.delay) && event.decision.delay >= 0

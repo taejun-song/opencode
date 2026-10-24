@@ -1,6 +1,7 @@
 export * as ConfigDiscovery from "./discovery.js"
 
 import os from "os"
+import { existsSync } from "fs"
 import path from "path"
 import { Effect } from "effect"
 import { FSUtil } from "@opencode/util/fs-util"
@@ -26,8 +27,19 @@ export interface Sources {
 
 /** Platform system configuration directory (`/Library/Application Support/airlock`, `/etc/airlock`, `%ProgramData%\airlock`).
  *  airlock: OPENCODE_TEST_MANAGED_CONFIG_DIR (alias AIRLOCK_TEST_MANAGED_CONFIG_DIR) overrides it for tests. */
-export function systemDirectory(platform: NodeJS.Platform = process.platform, env: NodeJS.ProcessEnv = process.env) {
-  if (env.OPENCODE_TEST_MANAGED_CONFIG_DIR) return AbsolutePath.make(path.resolve(env.OPENCODE_TEST_MANAGED_CONFIG_DIR))
+export function systemDirectory(
+  platform: NodeJS.Platform = process.platform,
+  env: NodeJS.ProcessEnv = process.env,
+  realHasConfig: (dir: string) => boolean = (dir) => ConfigNames.some((n) => existsSync(path.join(dir, n))),
+) {
+  const real = platformSystemDirectory(platform, env)
+  // airlock: the test override never replaces a real managed profile (it would be a policy bypass).
+  if (env.OPENCODE_TEST_MANAGED_CONFIG_DIR && !realHasConfig(real))
+    return AbsolutePath.make(path.resolve(env.OPENCODE_TEST_MANAGED_CONFIG_DIR))
+  return real
+}
+
+function platformSystemDirectory(platform: NodeJS.Platform, env: NodeJS.ProcessEnv) {
   if (platform === "darwin") return AbsolutePath.make("/Library/Application Support/airlock")
   if (platform === "win32") return AbsolutePath.make(path.join(env.ProgramData || "C:\\ProgramData", "airlock"))
   return AbsolutePath.make("/etc/airlock")

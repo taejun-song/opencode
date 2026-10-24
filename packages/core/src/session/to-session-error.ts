@@ -59,6 +59,17 @@ export function toSessionError(cause: unknown): SessionError.Error {
         return providerError("provider.unknown", cause.reason)
       case "Timeout":
         return providerError("provider.timeout", cause.reason)
+      case "SecurityPolicy": {
+        // airlock: the TUI and web UI render the policy notice from the JSON details.
+        const r = cause.reason
+        const details = Object.fromEntries(
+          Object.entries({ kind: r.kind, rule: r.rule, event_id: r.eventId, center_url: r.centerUrl }).filter(
+            ([, v]) => v !== undefined,
+          ),
+        )
+        const type = r.kind === "unavailable" ? "airlock.unavailable" : r.kind === "credential" ? "airlock.credential" : "airlock.policy"
+        return { type, message: r.message, response: { body: JSON.stringify(details) } }
+      }
       default: {
         const exhaustive: never = cause.reason
         return exhaustive
