@@ -1,0 +1,308 @@
+name: airlock-engine-release
+
+# airlock engine on the upstream opencode 2.x line (airlock feature 016). Builds the airlock-branded
+# engine from an overlay tag (airlock-v2.x.y-N) and publishes per-platform artifacts as a GitHub Release
+# on this fork, consumed by airlock's build.sh (fetch_engine). Same contract as the 1.x workflow on the
+# `airlock` branch: vendor builds bake a license key (license_pubkey_b64 + release_suffix).
+on:
+  workflow_dispatch:
+    inputs:
+      overlay_tag:
+        description: "overlay tag to build and release (e.g. airlock-v2.1.4-1)"
+        required: true
+      license_pubkey_b64:
+        description: "vendor build: base64 of the minisign public-key file to bake in (empty = public build)"
+        required: false
+        default: ""
+      release_suffix:
+        description: "vendor build: release-tag suffix (e.g. -vendor1); required when a key is baked"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  BUN_VERSION: 1.4.4
+
+jobs:
+  # airlock behaviour (layout, names, license, security check, offline hardening) is asserted on Linux
+  # and native Windows before any engine is built or published.
+  airlock-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout overlay tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.overlay_tag }}
+
+      - name: Setup Bun (pinned)
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: util (layout, AIRLOCK_* aliases, license verifier, offline defaults)
+        working-directory: packages/util
+        run: bun test test/airlock-paths.test.ts test/airlock-license.test.ts test/airlock-offline.test.ts
+
+      - name: core (config names, security check, never-retried security errors, model client wrapper, offline)
+        working-directory: packages/core
+        run: bun test test/airlock-config-names.test.ts test/airlock-security.test.ts test/airlock-security-error.test.ts test/airlock-llm-client.test.ts test/airlock-offline.test.ts
+
+      - name: cli (names, license gate, disabled commands, standalone default)
+        working-directory: packages/cli
+        run: bun test test/airlock-names.test.ts test/airlock-gate.test.ts test/airlock-offline.test.ts
+
+      - name: tui (offline parsers)
+        working-directory: packages/tui
+        run: bun test test/airlock-offline.test.ts
+
+  build-release:
+    needs: airlock-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Guard vendor-build inputs (suffix required with a key, and only then)
+        run: |
+          set -euo pipefail
+          key='${{ inputs.license_pubkey_b64 }}'
+          suf='${{ inputs.release_suffix }}'
+          if [ -n "$key" ] && [ -z "$suf" ]; then
+            echo "license_pubkey_b64 set but release_suffix empty — a baked build must not clobber the public tag"; exit 1
+          fi
+          if [ -z "$key" ] && [ -n "$suf" ]; then
+            echo "release_suffix set but no license_pubkey_b64 — suffix is only for baked vendor builds"; exit 1
+          fi
+
+      - name: Checkout overlay tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.overlay_tag }}
+          fetch-depth: 0
+
+      - name: Setup Bun (pinned)
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Derive engine base version from the overlay tag
+        run: |
+          set -euo pipefail
+          base="$(printf '%s' '${{ inputs.overlay_tag }}' | sed -E 's/^airlock-v([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+$/\1/')"
+          case "$base" in 2.*) ;; *) echo "overlay tag must be airlock-v2.x.y-N (got ${{ inputs.overlay_tag }})"; exit 1 ;; esac
+          echo "OPENCODE_VERSION=${base}" >> "$GITHUB_ENV"
+          echo "OPENCODE_CHANNEL=airlock" >> "$GITHUB_ENV"
+          echo "engine base version: ${base}"
+
+      - name: Build engine (all upstream targets, with the browser UI)
+        env:
+          AIRLOCK_LICENSE_PUBKEY_B64: ${{ inputs.license_pubkey_b64 }}
+        run: bun packages/cli/script/build.ts
+
+      - name: Verify the built engine (identity, layout, offline defaults)
+        run: |
+          set -euo pipefail
+          for plat in linux-x64 linux-arm64 darwin-x64 darwin-arm64 windows-x64; do
+            bin="packages/cli/dist/cli-${plat}/bin/opencode"
+            [ "$plat" = "windows-x64" ] && bin="${bin}.exe"
+            [ -f "$bin" ] || { echo "missing build output for ${plat}"; exit 1; }
+          done
+          bin="packages/cli/dist/cli-linux-x64/bin/opencode"
+          T="$(mktemp -d)"
+          HOME="$T" "$bin" --version | grep -q '^airlock-engine v'"$OPENCODE_VERSION"'$' || { echo "FAIL: --version is not airlock-engine v$OPENCODE_VERSION"; exit 1; }
+          HOME="$T" XDG_CONFIG_HOME="$T/xdg" "$bin" debug paths > "$T/paths.txt"
+          grep -q "$T/.config/airlock" "$T/paths.txt" || { echo "FAIL: config dir is not ~/.config/airlock"; cat "$T/paths.txt"; exit 1; }
+          if grep -q '/opencode' "$T/paths.txt"; then echo "FAIL: upstream path in debug paths"; cat "$T/paths.txt"; exit 1; fi
+          HOME="$T" "$bin" upgrade > "$T/up.txt" 2>&1 && { echo "FAIL: upgrade must be disabled"; exit 1; }
+          grep -q '\[airlock\] airlock-engine upgrade is not available' "$T/up.txt" || { echo "FAIL: upgrade message"; cat "$T/up.txt"; exit 1; }
+          echo "engine verification OK"
+
+      - name: License gate self-test (built binary must enforce; real minisign)
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq minisign
+          bin="packages/cli/dist/cli-linux-x64/bin/opencode"
+          T="$(mktemp -d)"
+          if [ -n '${{ inputs.license_pubkey_b64 }}' ]; then
+            # Vendor (baked) build: enforcement must be MANDATORY. The workflow
+            # has no vendor secret key, so prove the deny paths + exemption.
+            if AIRLOCK_LICENSE_DIR="$T/none" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats 2>"$T/err"; then
+              echo "FAIL: baked build ran without a license"; exit 1
+            fi
+            grep -q 'no license installed' "$T/err" || { echo "FAIL: no mandatory-block message"; cat "$T/err"; exit 1; }
+            "$bin" --version >/dev/null
+            echo "baked-build self-test OK (mandatory block without license; --version exempt)"
+            exit 0
+          fi
+          minisign -G -f -W -p "$T/airlock.pub" -s "$T/airlock.key"
+          mk() { # <expiry> <dir>
+            mkdir -p "$2"
+            printf 'licensee=SelfTest Corp\ncontract=CT-0001\nexpiry=%s\n' "$1" > "$2/license.txt"
+            minisign -S -s "$T/airlock.key" -m "$2/license.txt" -x "$2/license.txt.minisig"
+            cp "$T/airlock.pub" "$2/airlock.pub"
+          }
+          # 1) no license dir -> enforcement off (open build behavior)
+          out="$(AIRLOCK_LICENSE_DIR="$T/none" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats)"
+          [ "$out" = "license-ok" ] || { echo "FAIL: missing-verifier should be unlicensed-ok"; exit 1; }
+          # 2) valid license -> ok
+          mk 2099-01-01 "$T/valid"
+          out="$(AIRLOCK_LICENSE_DIR="$T/valid" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats)"
+          [ "$out" = "license-ok" ] || { echo "FAIL: valid license rejected"; exit 1; }
+          # 3) expired -> blocked, fail-loud
+          mk 2020-01-01 "$T/expired"
+          if AIRLOCK_LICENSE_DIR="$T/expired" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats 2>"$T/err"; then
+            echo "FAIL: expired license did not block"; exit 1
+          fi
+          grep -q 'license expired on 2020-01-01' "$T/err" || { echo "FAIL: no fail-loud expiry message"; cat "$T/err"; exit 1; }
+          # 4) tampered content -> blocked
+          mk 2099-01-01 "$T/tampered"
+          sed -i 's/expiry=2099/expiry=2199/' "$T/tampered/license.txt"
+          if AIRLOCK_LICENSE_DIR="$T/tampered" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats 2>"$T/err2"; then
+            echo "FAIL: tampered license did not block"; exit 1
+          fi
+          grep -q 'verification FAILED' "$T/err2" || { echo "FAIL: no tamper message"; cat "$T/err2"; exit 1; }
+          # 5) --version stays available even when expired (inspectability)
+          AIRLOCK_LICENSE_DIR="$T/expired" "$bin" --version >/dev/null
+          echo "license gate self-test OK (off/valid/expired/tampered/version-exempt)"
+
+      - name: Security check self-test (engine-side policy gate vs stub center)
+        run: |
+          set -euo pipefail
+          bin="packages/cli/dist/cli-linux-x64/bin/opencode"
+          stub=".github/airlock/stub-center.py"
+          T="$(mktemp -d)"
+          export HOME="$T/home"
+          mkdir -p "$HOME"
+          PIDS=()
+          trap 'kill "${PIDS[@]}" 2>/dev/null || true' EXIT
+          start() { # <port> <mode>
+            python3 "$stub" --port "$1" --mode "$2" --record "$T/rec-$2.jsonl" >/dev/null 2>&1 &
+            PIDS+=($!)
+            for _ in $(seq 1 50); do
+              if curl -fsS "http://127.0.0.1:$1/v1/health" >/dev/null 2>&1; then return 0; fi
+              sleep 0.1
+            done
+            echo "stub $2 did not start"; exit 1
+          }
+          start 8461 allow; start 8462 deny; start 8463 unauth; start 8464 hang
+          profile() { # <dir> <port> <mode> [timeout_ms]
+            mkdir -p "$1"
+            printf '{"security_center":{"center_url":"http://127.0.0.1:%s","token":"tok","fail_mode":"%s","timeout_ms":%s}}\n' \
+              "$2" "$3" "${4:-3000}" > "$1/airlock.json"
+          }
+          selftest() { AIRLOCK_TEST_MANAGED_CONFIG_DIR="$1" AIRLOCK_SECURITY_SELFTEST=1 "$bin" stats >"$T/out" 2>"$T/err"; }
+          fail() { echo "FAIL: $1"; cat "$T/out" "$T/err" 2>/dev/null; exit 1; }
+          # 1) allow -> proceeds; request body carries identity + hash + version
+          profile "$T/p-allow" 8461 strict
+          selftest "$T/p-allow" || fail "allow should exit 0"
+          [ "$(cat "$T/out")" = "security-allow" ] || fail "allow verdict"
+          for k in agent_id content_sha256 engine_version; do
+            grep -q "\"$k\"" "$T/rec-allow.jsonl" || fail "check body lacks $k"
+          done
+          # 2) deny -> blocked before any provider call, rule named
+          profile "$T/p-deny" 8462 strict
+          if selftest "$T/p-deny"; then fail "deny should exit 1"; fi
+          [ "$(cat "$T/out")" = "security-deny:stub-rule" ] || fail "deny verdict"
+          grep -q 'blocked by organizational policy: stub-rule' "$T/err" || fail "deny message"
+          # 3) bad credential -> blocked in every mode
+          profile "$T/p-unauth" 8463 permissive
+          if selftest "$T/p-unauth"; then fail "unauth should exit 1"; fi
+          grep -q "rejected this agent's credential" "$T/err" || fail "unauth message"
+          # 4) center hangs, strict -> blocked with the unavailable message
+          profile "$T/p-hang-strict" 8464 strict 1000
+          if selftest "$T/p-hang-strict"; then fail "hang+strict should exit 1"; fi
+          [ "$(cat "$T/out")" = "security-unavailable:strict" ] || fail "strict verdict"
+          grep -q 'security check unavailable' "$T/err" || fail "strict message"
+          # 5) center hangs, permissive -> proceeds + local journal (hash+excerpt, never full content)
+          profile "$T/p-hang-perm" 8464 permissive 1000
+          selftest "$T/p-hang-perm" || fail "hang+permissive should exit 0"
+          [ "$(cat "$T/out")" = "security-unavailable:permissive" ] || fail "permissive verdict"
+          J="$HOME/.local/state/airlock/security-journal.jsonl"
+          grep -q '"verdict":"unavailable-permissive"' "$J" || fail "journal entry missing"
+          grep -q '"excerpt"' "$J" || fail "journal lacks excerpt"
+          if grep -q '"content":' "$J"; then fail "journal must not hold full content"; fi
+          # 6) next successful contact syncs the journal and empties it
+          selftest "$T/p-allow" || fail "allow after journal should exit 0"
+          grep -q '"/v1/events"' "$T/rec-allow.jsonl" || fail "journal was not posted to /v1/events"
+          grep -q 'unavailable-permissive' "$T/rec-allow.jsonl" || fail "posted batch lacks the journal entry"
+          [ ! -s "$J" ] || fail "journal not emptied after sync"
+          # 7) a REAL managed profile wins over the test override (no developer bypass)
+          if AIRLOCK_SECURITY_SELFTEST_MANAGED_DIR="$T/p-deny" AIRLOCK_TEST_MANAGED_CONFIG_DIR="$T/p-allow" \
+               AIRLOCK_SECURITY_SELFTEST=1 "$bin" stats >"$T/out" 2>/dev/null; then fail "override must not beat the real profile"; fi
+          [ "$(cat "$T/out")" = "security-deny:stub-rule" ] || fail "precedence verdict"
+          # 8) no profile anywhere -> feature off
+          selftest "$T/none" || fail "no profile should exit 0"
+          [ "$(cat "$T/out")" = "security-off" ] || fail "off verdict"
+          echo "security check self-test OK (allow/deny/unauth/strict/permissive+journal+sync/precedence/off)"
+
+      - name: Package airlock-engine artifacts (5 target platforms)
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          for plat in linux-x64 linux-arm64 darwin-x64 darwin-arm64 windows-x64; do
+            d="packages/cli/dist/cli-${plat}/bin"
+            if [ ! -d "$d" ]; then echo "missing build output for ${plat} ($d)"; exit 1; fi
+            tar -C "$d" -czf "out/airlock-engine-${plat}.tar.gz" .
+            ( cd out && sha256sum "airlock-engine-${plat}.tar.gz" > "airlock-engine-${plat}.tar.gz.sha256" )
+          done
+          ls -la out
+
+      # Public builds only: prove the BAKING MECHANISM itself on every release — rebuild the host
+      # platform with a throwaway key baked in and assert mandatory enforcement (block/valid/expired).
+      - name: Baked-key mechanism self-test (throwaway key, host-platform rebuild)
+        if: ${{ inputs.license_pubkey_b64 == '' }}
+        run: |
+          set -euo pipefail
+          T="$(mktemp -d)"
+          minisign -G -f -W -p "$T/airlock.pub" -s "$T/airlock.key"
+          export AIRLOCK_LICENSE_PUBKEY_B64="$(base64 -w0 "$T/airlock.pub")"
+          bun packages/cli/script/build.ts --single --skip-install --outdir=dist-baked
+          bin="$(find packages/cli/dist-baked -type f -name opencode -path '*linux-x64*' | head -n1)"
+          [ -n "$bin" ] || { echo "FAIL: no single-build output"; exit 1; }
+          # no license -> mandatory block (deleting the disk pubkey must not help: none exists here at all)
+          if AIRLOCK_LICENSE_DIR="$T/none" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats 2>"$T/err"; then
+            echo "FAIL: baked build ran without a license"; exit 1
+          fi
+          grep -q 'no license installed' "$T/err" || { echo "FAIL: no mandatory-block message"; cat "$T/err"; exit 1; }
+          # valid signed license -> ok (we hold the throwaway secret key)
+          mkdir -p "$T/valid"
+          printf 'licensee=Baked Corp\ncontract=CT-0002\nexpiry=2099-01-01\n' > "$T/valid/license.txt"
+          minisign -S -s "$T/airlock.key" -m "$T/valid/license.txt" -x "$T/valid/license.txt.minisig"
+          out="$(AIRLOCK_LICENSE_DIR="$T/valid" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats)"
+          [ "$out" = "license-ok" ] || { echo "FAIL: valid license rejected by baked build"; exit 1; }
+          # expired -> blocked
+          mkdir -p "$T/expired"
+          printf 'licensee=Baked Corp\ncontract=CT-0002\nexpiry=2020-01-01\n' > "$T/expired/license.txt"
+          minisign -S -s "$T/airlock.key" -m "$T/expired/license.txt" -x "$T/expired/license.txt.minisig"
+          if AIRLOCK_LICENSE_DIR="$T/expired" AIRLOCK_LICENSE_SELFTEST=1 "$bin" stats >/dev/null 2>&1; then
+            echo "FAIL: baked build accepted an expired license"; exit 1
+          fi
+          echo "baked-key mechanism OK (mandatory block / valid allows / expired blocks)"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.overlay_tag }}${{ inputs.release_suffix }}"
+          baked=""
+          [ -n '${{ inputs.license_pubkey_b64 }}' ] && baked=" — VENDOR build (license key baked in; enforcement mandatory)"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" out/* --clobber
+          else
+            # 2.x line: pre-release until upstream publishes 2.x and airlock adopts it (feature 016).
+            gh release create "$tag" out/* --prerelease \
+              --title "airlock engine $tag" \
+              --notes "airlock-branded opencode engine built from ${{ inputs.overlay_tag }} (overlay on opencode v${OPENCODE_VERSION}, 2.x line)${baked}."
+          fi
