@@ -70,7 +70,7 @@ describe("debug config command", () => {
         registration,
         JSON.stringify({ version: OPENCODE_VERSION, url: server.url.toString(), pid: process.pid, password: "secret" }),
       )
-      const result = await cli(["debug", "config"], project, { AIRLOCK_HONOR_XDG: "1", XDG_STATE_HOME: path.join(root, "state") })
+      const result = await cli(["debug", "config"], project, { AIRLOCK_HONOR_XDG: "1", AIRLOCK_ENABLE_SERVICE: "1", XDG_STATE_HOME: path.join(root, "state") })
 
       expect({ exitCode: result.exitCode, stderr: result.stderr }).toEqual({ exitCode: 0, stderr: "" })
       expect(JSON.parse(result.stdout)).toEqual(redactConfig(entries))

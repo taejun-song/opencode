@@ -18,6 +18,10 @@ export type Resolved = {
   readonly service?: ReturnType<typeof managedService>
 }
 
+/** airlock: a private (standalone) engine unless the background service is explicitly enabled. */
+export const airlockStandalone = (args: { readonly standalone?: boolean }, disabled: boolean, env: NodeJS.ProcessEnv) =>
+  Boolean(args.standalone) || disabled || env.OPENCODE_ENABLE_SERVICE !== "1"
+
 export const resolve = Effect.fn("cli.server-connection.resolve")(function* (args: Args = {}) {
   if (args.server !== undefined && args.standalone)
     return yield* Effect.fail(new Error("--server and --standalone cannot be combined"))
@@ -38,7 +42,7 @@ export const resolve = Effect.fn("cli.server-connection.resolve")(function* (arg
       )
     return { endpoint } satisfies Resolved
   }
-  if (args.standalone || (yield* ServiceConfig.read()).disabled === true) {
+  if (airlockStandalone(args, (yield* ServiceConfig.read()).disabled === true, process.env)) {
     return { endpoint: yield* Standalone.start() } satisfies Resolved
   }
 

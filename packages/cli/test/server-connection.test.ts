@@ -1,13 +1,21 @@
 import { NodeFileSystem } from "@effect/platform-node"
 import { Global } from "@opencode/util/global"
 import { OPENCODE_VERSION } from "../src/version"
-import { expect, test } from "bun:test"
+import { expect, test, beforeAll, afterAll } from "bun:test"
 import { Effect, FileSystem, Scope } from "effect"
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { ServerConnection } from "../src/services/server-connection"
 import { ServiceConfig } from "../src/services/service-config"
+
+// airlock: airlock runs a private engine unless the background service is enabled; upstream behaviour is covered here under the explicit opt-in.
+beforeAll(() => {
+  process.env.OPENCODE_ENABLE_SERVICE = "1"
+})
+afterAll(() => {
+  delete process.env.OPENCODE_ENABLE_SERVICE
+})
 
 test("resolution groups Effect-native lifecycle operations only for the managed service", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "opencode-server-resolution-"))

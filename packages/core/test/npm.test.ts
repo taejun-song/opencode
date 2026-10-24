@@ -8,6 +8,9 @@ import { Global } from "@opencode/util/global"
 import { Npm } from "@opencode/util/npm"
 import { tmpdir } from "./fixture/tmpdir"
 
+// airlock: these tests exercise real installs, which airlock gates behind AIRLOCK_NPM_INSTALL=1.
+process.env.OPENCODE_NPM_INSTALL = "1"
+
 const win = process.platform === "win32"
 
 const writePackage = (dir: string, pkg: Record<string, unknown>) =>

@@ -19,6 +19,7 @@ import { EffectFlock } from "@opencode/util/effect-flock"
 import { Heap } from "./heap"
 import { CpuProfile } from "./cpu-profile"
 import { airlockGate } from "./airlock-gate"
+import { AirlockUnavailableError } from "./airlock-disabled"
 
 ensurePluginRuntime()
 
@@ -149,7 +150,10 @@ Effect.gen(function* () {
   Effect.tapCause((cause) =>
     Effect.sync(() => {
       if (Cause.hasInterruptsOnly(cause)) return
-      if (!getErrorReported(Cause.squash(cause))) return
+      const squashed = Cause.squash(cause)
+      // airlock: disabled-feature messages are for users, not stack traces.
+      if (squashed instanceof AirlockUnavailableError) return void process.stderr.write(squashed.message + "\n")
+      if (!getErrorReported(squashed)) return
       process.stderr.write(Cause.pretty(cause) + "\n")
     }),
   ),

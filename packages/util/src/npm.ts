@@ -16,6 +16,9 @@ export class InstallFailedError extends Schema.TaggedError<InstallFailedError>()
   cause: Schema.optional(Schema.Defect()),
 }) {}
 
+/** airlock: runtime npm installs (plugins, provider SDKs, formatters) need AIRLOCK_NPM_INSTALL=1. */
+export const installAllowed = (env: NodeJS.ProcessEnv) => env.OPENCODE_NPM_INSTALL === "1"
+
 export interface Package {
   readonly directory: string
   readonly name: string
@@ -251,6 +254,16 @@ const layer = Layer.effect(
       dir: string,
       update: boolean,
     ) {
+      if (!installAllowed(process.env))
+        return yield* Effect.fail(
+          new InstallFailedError({
+            dir,
+            add: [pkg],
+            cause: new Error(
+              `airlock: runtime npm installs are disabled offline (${pkg}); set AIRLOCK_NPM_INSTALL=1 to allow`,
+            ),
+          }),
+        )
       yield* flock.acquire(`npm-install:${dir}`)
       const active = yield* current(dir)
       const name = yield* installedName(pkg, active ?? dir, target)

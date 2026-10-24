@@ -1,5 +1,6 @@
 import { Context, Effect, FileSystem, Option } from "effect"
 import { Commands } from "../commands"
+import { airlockUnavailable } from "../../airlock-disabled"
 import { Runtime } from "../../framework/runtime"
 import { ServerConnection } from "../../services/server-connection"
 import { Config } from "../../config"
@@ -8,6 +9,8 @@ import { Global } from "@opencode/util/global"
 
 export default Runtime.handler(Commands.commands.mini, (input) =>
   Effect.gen(function* () {
+    if (process.env.OPENCODE_ENABLE_MINI !== "1")
+      return yield* airlockUnavailable("airlock-engine mini", "Use the full terminal UI: run `airlock` (or `airlock-engine`) without a subcommand.")
     const { runMini, validateMiniTerminal } = yield* Effect.promise(() => import("../../mini"))
     yield* Effect.promise(async () => validateMiniTerminal())
     const serverURL = Option.getOrUndefined(input.server)

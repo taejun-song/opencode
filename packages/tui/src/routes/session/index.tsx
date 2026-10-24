@@ -74,7 +74,7 @@ import { DialogGoUpsell } from "../../component/dialog-go-upsell"
 import { useStorage } from "../../context/storage"
 import { Composer } from "./composer"
 import { filetype } from "../../util/filetype"
-import parsers from "../../parsers-config"
+import parsers, { airlockParsers } from "../../parsers-config"
 import { errorMessage } from "../../util/error"
 import { useToast } from "../../ui/toast"
 import stripAnsi from "strip-ansi"
@@ -134,7 +134,7 @@ import { rowsAfter, rowsBefore, rowWeight } from "./mount-budget"
 export { InlineToolRow } from "./message-parts"
 export { toolDisplay } from "./message-parts"
 
-addDefaultParsers(parsers.parsers)
+addDefaultParsers(airlockParsers(parsers.parsers))
 
 // Exclude temporary bottom space when measuring the real transcript height.
 const NAVIGATION_SLACK_ID = "session-navigation-slack"

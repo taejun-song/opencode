@@ -8,6 +8,7 @@ import { Commands } from "../commands"
 import { Runtime } from "../../framework/runtime"
 import { RemoteTunnel } from "../../services/remote-tunnel"
 import { ServiceConfig } from "../../services/service-config"
+import { airlockUnavailable } from "../../airlock-disabled"
 
 export default Runtime.handler(
   Commands.commands.pair,
@@ -17,6 +18,8 @@ export default Runtime.handler(
       return yield* Effect.fail(
         new Error("Pairing requires the background service; run `opencode service unset disabled` first"),
       )
+    if (input.remote)
+      return yield* airlockUnavailable("pair --remote", "Pair over your intranet instead: `airlock-engine pair` prints local links.")
     if (input.remote && Option.isSome(input.url))
       return yield* Effect.fail(new Error("--remote cannot be combined with --url"))
     if (input.remote && config.remote === undefined) {

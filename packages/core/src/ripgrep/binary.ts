@@ -11,6 +11,9 @@ import { Global } from "@opencode/util/global"
 import { which } from "../util/which.js"
 
 export namespace RipgrepBinary {
+  /** airlock: rg ships in the airlock bundle; downloading it from GitHub needs AIRLOCK_RIPGREP_DOWNLOAD=1. */
+  export const downloadAllowed = (env: NodeJS.ProcessEnv) => env.OPENCODE_RIPGREP_DOWNLOAD === "1"
+
   const VERSION = "15.1.0"
   const PLATFORM = {
     "arm64-darwin": { platform: "aarch64-apple-darwin", extension: "tar.gz" },
@@ -97,6 +100,10 @@ export namespace RipgrepBinary {
             const config = PLATFORM[platformKey]
             if (!config) throw new Error(`unsupported platform for ripgrep: ${platformKey}`)
 
+            if (!downloadAllowed(process.env))
+              throw new Error(
+                "ripgrep (rg) was not found on PATH or in the engine's bin directory. airlock ships rg in its bundle: reinstall airlock (downloads are disabled offline; AIRLOCK_RIPGREP_DOWNLOAD=1 allows one)",
+              )
             const filename = `ripgrep-${VERSION}-${config.platform}.${config.extension}`
             const url = `https://github.com/BurntSushi/ripgrep/releases/download/${VERSION}/${filename}`
             const archive = path.join(global.bin, filename)

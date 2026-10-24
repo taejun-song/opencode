@@ -1,4 +1,5 @@
 import { intro, log, outro, spinner } from "@clack/prompts"
+import { airlockUnavailable } from "../../airlock-disabled"
 import { Effect, Option } from "effect"
 import { Commands } from "../commands"
 import { Runtime } from "../../framework/runtime"
@@ -11,6 +12,12 @@ export default Runtime.handler(
   Commands.commands.upgrade,
   Effect.fn("cli.upgrade")(
     function* (input) {
+      // airlock: the engine ships inside the airlock bundle; it never upgrades itself from the internet.
+      if (process.env.OPENCODE_ALLOW_SELF_UPGRADE !== "1")
+        return yield* airlockUnavailable(
+          "airlock-engine upgrade",
+          "The engine ships inside the airlock bundle: install a newer airlock bundle to upgrade it.",
+        )
       intro("Upgrade")
       const updater = yield* Updater.Service
       const method = Option.getOrUndefined(input.method) ?? (yield* updater.method())

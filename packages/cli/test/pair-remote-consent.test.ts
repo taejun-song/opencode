@@ -107,16 +107,9 @@ test("pair --remote without a terminal fails before enabling anything, and help 
   }
   const [pair, help] = await Promise.all([cli(["pair", "--remote"]), cli(["pair", "--help"])])
 
+  // airlock: the internet tunnel is refused outright (offline deployments), before anything is enabled.
   expect(pair.exitCode).toBe(1)
-  expect(pair.output).toBe(
-    [
-      "This will expose your OpenCode server to the internet.",
-      "Traffic is end-to-end encrypted, and access requires your server password.",
-      "To pair locally instead, run `opencode pair` without the --remote flag.",
-      "Run interactively or pass --yes to continue.",
-      "",
-    ].join(os.EOL),
-  )
+  expect(pair.output).toContain("[airlock] pair --remote is not available")
   expect(await Array.fromAsync(new Bun.Glob("**/service*.json").scan({ cwd: root, dot: true }))).toEqual([])
   expect(help.exitCode).toBe(0)
   expect(help.output).toContain("--yes")

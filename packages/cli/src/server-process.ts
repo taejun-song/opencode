@@ -185,7 +185,13 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
         }),
       )
       if (server === undefined) return
-      if (serviceOptions !== undefined && config.remote !== undefined && NetAddress.isInetAddress(server.address)) {
+      // airlock: the internet tunnel never starts (offline deployments), whatever the service config says.
+      if (
+        process.env.OPENCODE_ALLOW_TUNNEL === "1" &&
+        serviceOptions !== undefined &&
+        config.remote !== undefined &&
+        NetAddress.isInetAddress(server.address)
+      ) {
         const bound = NetAddress.formatIp(server.address.address)
         // A wildcard bind also listens on loopback, which is all the tunnel needs to reach.
         const target =

@@ -1,7 +1,15 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, beforeAll, afterAll } from "bun:test"
 import { mkdtemp, rm } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
+
+// airlock: self-upgrade is disabled in airlock; upstream behaviour is covered here under the explicit opt-in.
+beforeAll(() => {
+  process.env.OPENCODE_ALLOW_SELF_UPGRADE = "1"
+})
+afterAll(() => {
+  delete process.env.OPENCODE_ALLOW_SELF_UPGRADE
+})
 
 describe("upgrade command", () => {
   test("is registered in root help and documents its options", async () => {

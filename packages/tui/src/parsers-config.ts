@@ -1,3 +1,8 @@
+/** airlock: parsers downloaded from GitHub on demand are dropped offline unless AIRLOCK_TUI_REMOTE_PARSERS=1. */
+export function airlockParsers<T extends { readonly wasm: string }>(list: ReadonlyArray<T>, env: NodeJS.ProcessEnv = process.env): T[] {
+  return env.OPENCODE_TUI_REMOTE_PARSERS === "1" ? [...list] : list.filter((p) => !/^https?:\/\//.test(p.wasm))
+}
+
 export default {
   // NOTE: FOR markdown, javascript and typescript, we use the opentui built-in parsers
   // Warn: when taking queries from the nvim-treesitter repo, make sure to include the query dependencies as well

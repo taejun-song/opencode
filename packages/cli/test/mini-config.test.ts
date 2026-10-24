@@ -9,6 +9,8 @@ import type { MiniCommandInput } from "../src/mini"
 import { OPENCODE_VERSION } from "../src/version"
 
 test("mini handler passes resolved CLI keybinds to the runtime", async () => {
+  // airlock: mini is disabled unless explicitly enabled; this test covers the enabled path.
+  process.env.OPENCODE_ENABLE_MINI = "1"
   const root = await Bun.$`mktemp -d`.text().then((value) => value.trim())
   const configDirectory = path.join(root, "config")
   const stateDirectory = path.join(root, "state")
@@ -64,6 +66,7 @@ test("mini handler passes resolved CLI keybinds to the runtime", async () => {
   } finally {
     server.stop(true)
     mock.restore()
+    delete process.env.OPENCODE_ENABLE_MINI
     await rm(root, { recursive: true, force: true })
   }
 })

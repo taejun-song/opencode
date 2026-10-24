@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, beforeAll, afterAll } from "bun:test"
 import { ClientError, OpenCode } from "@opencode/client/promise"
 import { OPENCODE_VERSION } from "../src/version"
 import path from "node:path"
@@ -6,9 +6,18 @@ import { createMiniConnection, mergeInput as mergeInteractiveInput, resolveMiniT
 import { mergeInput as mergeNonInteractiveInput, parseRunModel } from "../src/run/run"
 import { parseSessionTargetModel } from "../src/session-target"
 
+// airlock: mini is disabled in airlock; upstream behaviour is covered here under the explicit opt-in.
+beforeAll(() => {
+  process.env.OPENCODE_ENABLE_MINI = "1"
+})
+afterAll(() => {
+  delete process.env.OPENCODE_ENABLE_MINI
+})
+
 async function cli(args: string[]) {
   const child = Bun.spawn([process.execPath, "run", "src/index.ts", ...args], {
     cwd: path.join(import.meta.dir, ".."),
+    env: process.env, // airlock: pass the opt-in set in beforeAll to the child
     stdout: "pipe",
     stderr: "pipe",
   })
