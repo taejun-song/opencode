@@ -70,7 +70,7 @@ describe("managed profile", () => {
 
   test("config discovery applies the managed-dir override only when the real directory has no config", () => {
     const real = tmp("al-real-")
-    expect(String(ConfigDiscovery.systemDirectory("linux", { OPENCODE_TEST_MANAGED_CONFIG_DIR: "/tmp/m" }, () => false))).toBe("/tmp/m")
+    expect(String(ConfigDiscovery.systemDirectory("linux", { OPENCODE_TEST_MANAGED_CONFIG_DIR: "/tmp/m" }, () => false))).toBe(path.resolve("/tmp/m"))
     expect(String(ConfigDiscovery.systemDirectory("linux", { OPENCODE_TEST_MANAGED_CONFIG_DIR: "/tmp/m" }, () => true))).toBe("/etc/airlock")
     void real
   })

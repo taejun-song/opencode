@@ -17,7 +17,7 @@ describe("airlock config names", () => {
     expect(String(ConfigDiscovery.systemDirectory("win32", { ProgramData: "D:\\PD" }))).toBe(path.join("D:\\PD", "airlock"))
   })
   test("OPENCODE_TEST_MANAGED_CONFIG_DIR (AIRLOCK_ alias) overrides the managed directory", () => {
-    expect(String(ConfigDiscovery.systemDirectory("linux", { OPENCODE_TEST_MANAGED_CONFIG_DIR: "/tmp/m" }))).toBe("/tmp/m")
+    expect(String(ConfigDiscovery.systemDirectory("linux", { OPENCODE_TEST_MANAGED_CONFIG_DIR: "/tmp/m" }))).toBe(path.resolve("/tmp/m"))
   })
 })
 
