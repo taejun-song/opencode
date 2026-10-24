@@ -1,13 +1,19 @@
+import "./airlock-env.js"
 import os from "os"
 import path from "path"
 
-const home = os.homedir()
-const data = process.env.XDG_DATA_HOME || (home ? path.join(home, ".local", "share") : undefined)
-const cache = process.env.XDG_CACHE_HOME || (home ? path.join(home, ".cache") : undefined)
-const config = process.env.XDG_CONFIG_HOME || (home ? path.join(home, ".config") : undefined)
-const state = process.env.XDG_STATE_HOME || (home ? path.join(home, ".local", "state") : undefined)
+// airlock: the layout is $HOME-relative so the engine and the airlock installer agree on every path.
+// XDG_* variables (set by CI runners and some desktops) are honoured only with AIRLOCK_HONOR_XDG=1.
+const honorXdg = process.env.OPENCODE_HONOR_XDG === "1"
+const home = process.env.OPENCODE_TEST_HOME || os.homedir()
+const xdg = (value: string | undefined, rel: string[]) =>
+  honorXdg && value ? value : home ? path.join(home, ...rel) : undefined
+const data = xdg(process.env.XDG_DATA_HOME, [".local", "share"])
+const cache = xdg(process.env.XDG_CACHE_HOME, [".cache"])
+const config = xdg(process.env.XDG_CONFIG_HOME, [".config"])
+const state = xdg(process.env.XDG_STATE_HOME, [".local", "state"])
 
-/** The XDG base directories that root opencode's global paths. */
+/** The base directories that root the engine's global paths. */
 export function roots(app: string) {
   return {
     data: path.join(data!, app),

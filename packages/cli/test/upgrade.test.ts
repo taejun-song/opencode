@@ -93,6 +93,7 @@ async function cli(args: string[], env: Record<string, string> = {}, entry = "fi
         env: {
           ...process.env,
           OPENCODE_TEST_HOME: root,
+          AIRLOCK_HONOR_XDG: "1",
           XDG_DATA_HOME: path.join(root, "data"),
           XDG_CONFIG_HOME: path.join(root, "config"),
           XDG_CACHE_HOME: path.join(root, "cache"),
@@ -113,7 +114,7 @@ async function cli(args: string[], env: Record<string, string> = {}, entry = "fi
       .split("\n")
       .filter((line) => line.startsWith("EVENT "))
       .map((line) => JSON.parse(line.slice(6)))
-    expect(await Bun.file(path.join(root, "state", "opencode", "service-local.json")).exists()).toBe(false)
+    expect(await Bun.file(path.join(root, "state", "airlock", "service-local.json")).exists()).toBe(false)
     return { stdout, stderr, exitCode, events }
   } finally {
     await rm(root, { recursive: true, force: true })

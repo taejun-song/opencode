@@ -17,6 +17,7 @@ export function isolatedEnv(root: string, overrides: Record<string, string | und
     OPENCODE_DISABLE_FILEWATCHER: "true",
     OPENCODE_DISABLE_MODELS_FETCH: "true",
     OPENCODE_TEST_HOME: root,
+    AIRLOCK_HONOR_XDG: "1", // airlock: upstream tests isolate through XDG_*, which airlock honours only on opt-in
     XDG_CACHE_HOME: path.join(root, "cache"),
     XDG_CONFIG_HOME: path.join(root, "xdg-config"),
     XDG_DATA_HOME: path.join(root, "data"),

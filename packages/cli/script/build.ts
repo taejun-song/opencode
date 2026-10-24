@@ -181,7 +181,7 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
       outfile: path.join(outdir, name, "bin", binary),
       execArgv: [
         "--smol",
-        `--user-agent=opencode/${Script.channel}/${Script.version}/cli`,
+        `--user-agent=airlock/${Script.version}/cli`,
         "--use-system-ca",
         "--no-warnings",
         "--",
@@ -190,8 +190,9 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
     },
     define: {
       OPENCODE_VERSION: `'${Script.version}'`,
-      OPENCODE_CLI_NAME: "'opencode'",
-      OPENCODE_CHANNEL: `'${Script.channel}'`,
+      // airlock: the binary ships as airlock-engine on the airlock channel (own db/log/service names).
+      OPENCODE_CLI_NAME: "'airlock-engine'",
+      OPENCODE_CHANNEL: "'airlock'",
       OPENCODE_ARTIFACT: `'cli'`,
       ...(highlights ? { OPENCODE_RELEASE_HIGHLIGHTS: JSON.stringify(highlights) } : {}),
       OPENCODE_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "undefined",

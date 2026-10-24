@@ -56,9 +56,10 @@ function format(input: unknown) {
   return /^[^\s="\\]+$/.test(value) ? value : JSON.stringify(value)
 }
 
+// airlock: airlock.log (the airlock channel and non-local logs); other channels get a suffixed name.
 export function file(local = true, channel = "local") {
-  if (!local) return path.join(Global.Path.log, "opencode.log")
-  return path.join(Global.Path.log, `opencode-${channel.replace(/[^a-zA-Z0-9._-]/g, "-")}.log`)
+  if (!local || channel === "airlock") return path.join(Global.Path.log, "airlock.log")
+  return path.join(Global.Path.log, `airlock-${channel.replace(/[^a-zA-Z0-9._-]/g, "-")}.log`)
 }
 
 export function fileLogger(target = file(), id: string = runID()) {

@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import "@opencode/util/airlock-env"
 import { ensurePluginRuntime } from "@opencode/plugin/runtime"
 import { NodeRuntime, NodeServices } from "@effect/platform-node"
 import { Cause, Effect } from "effect"

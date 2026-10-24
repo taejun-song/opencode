@@ -1,3 +1,4 @@
+import { ConfigNames, ProjectDir } from "@opencode/util/global"
 import { EOL } from "node:os"
 import path from "node:path"
 import { readFile, stat, writeFile } from "node:fs/promises"
@@ -39,10 +40,10 @@ export default Runtime.handler(
 
 export async function resolveConfigPath(directory: string) {
   const candidates = [
-    path.join(directory, "opencode.json"),
-    path.join(directory, "opencode.jsonc"),
-    path.join(directory, ".opencode", "opencode.json"),
-    path.join(directory, ".opencode", "opencode.jsonc"),
+    path.join(directory, ConfigNames[0]),
+    path.join(directory, ConfigNames[1]),
+    path.join(directory, ProjectDir, ConfigNames[0]),
+    path.join(directory, ProjectDir, ConfigNames[1]),
   ]
   for (const candidate of candidates) {
     if (

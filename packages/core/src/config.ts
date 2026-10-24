@@ -10,7 +10,7 @@ import { Credential } from "./credential.js"
 import { Bus } from "./bus.js"
 import { Watcher } from "./filesystem/watcher.js"
 import { FSUtil } from "@opencode/util/fs-util"
-import { Global } from "@opencode/util/global"
+import { Global, ConfigNames } from "@opencode/util/global"
 import { Location } from "./location.js"
 import { AbsolutePath } from "./schema.js"
 import { ConfigVariable } from "./config/variable.js"
@@ -384,7 +384,7 @@ export const layer = (options?: Options) =>
           const directory = initial.global ?? AbsolutePath.make(globalService.config)
           const candidates = ConfigDiscovery.names.map((name) => path.join(directory, name))
           const filepath =
-            (yield* Effect.filter(candidates, fs.isFile)).at(-1) ?? path.join(directory, "opencode.jsonc")
+            (yield* Effect.filter(candidates, fs.isFile)).at(-1) ?? path.join(directory, ConfigNames[1])
           const text = (yield* fs.readFileStringSafe(filepath)) ?? "{}\n"
           const updated = yield* Effect.try({
             try: () =>

@@ -8,18 +8,21 @@ const module = pathToFileURL(path.join(import.meta.dir, "../src/global-roots.ts"
 describe("global roots", () => {
   test("uses XDG overrides", () => {
     const root = path.join(os.tmpdir(), "opencode-xdg-overrides")
+    // airlock: XDG_* is honoured only with the explicit opt-in (see airlock-paths.test.ts).
     const env = {
+      AIRLOCK_HONOR_XDG: "1",
       XDG_DATA_HOME: path.join(root, "data"),
       XDG_CACHE_HOME: path.join(root, "cache"),
       XDG_CONFIG_HOME: path.join(root, "config"),
       XDG_STATE_HOME: path.join(root, "state"),
     }
 
+    const { AIRLOCK_HONOR_XDG: _optIn, ...dirs } = env
     expect(run(env)).toEqual({
-      data: path.join(env.XDG_DATA_HOME, "opencode"),
-      cache: path.join(env.XDG_CACHE_HOME, "opencode"),
-      config: path.join(env.XDG_CONFIG_HOME, "opencode"),
-      state: path.join(env.XDG_STATE_HOME, "opencode"),
+      data: path.join(dirs.XDG_DATA_HOME, "opencode"),
+      cache: path.join(dirs.XDG_CACHE_HOME, "opencode"),
+      config: path.join(dirs.XDG_CONFIG_HOME, "opencode"),
+      state: path.join(dirs.XDG_STATE_HOME, "opencode"),
       tmp: path.join(os.tmpdir(), "opencode"),
     })
   })

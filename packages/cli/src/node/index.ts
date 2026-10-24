@@ -1,3 +1,4 @@
+import "@opencode/util/airlock-env"
 import "./plugin-runtime.promise"
 import "./plugin-runtime.effect"
 

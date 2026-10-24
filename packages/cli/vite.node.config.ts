@@ -276,8 +276,8 @@ export function mainConfig(input: NodeBuildInput): UserConfig {
     esbuild: { jsx: "automatic" },
     define: {
       OPENCODE_VERSION: JSON.stringify(input.version),
-      OPENCODE_CLI_NAME: JSON.stringify("opencode2-node"),
-      OPENCODE_CHANNEL: JSON.stringify(input.channel),
+      OPENCODE_CLI_NAME: JSON.stringify("airlock-engine"), // airlock
+      OPENCODE_CHANNEL: JSON.stringify("airlock"), // airlock
       OPENCODE_ARTIFACT: JSON.stringify("cli-node"),
       ...(input.highlights ? { OPENCODE_RELEASE_HIGHLIGHTS: JSON.stringify(input.highlights) } : {}),
       OPENCODE_LIBC: input.target.platform === "linux" ? JSON.stringify("glibc") : "undefined",
