@@ -145,14 +145,15 @@ export class TimeoutError extends Schema.TaggedError<TimeoutError>("AI.Error.Tim
 
 /**
  * airlock: the deployment's security center blocked the request (`deny`), rejected this agent's
- * credential (`credential`), or could not be reached in strict mode (`unavailable`). Raised before any
+ * credential (`credential`), could not be reached in strict mode (`unavailable`), or the license is no
+ * longer valid (`license`). Raised before any
  * provider I/O and never retryable.
  */
 export class SecurityPolicyError extends Schema.TaggedError<SecurityPolicyError>("AI.Error.SecurityPolicy")(
   "SecurityPolicy",
   {
     ...ReasonFields,
-    kind: Schema.Literals(["deny", "credential", "unavailable", "too-large"]),
+    kind: Schema.Literals(["deny", "credential", "unavailable", "too-large", "license"]),
     rule: Schema.optional(Schema.String),
     eventId: Schema.optional(Schema.String),
     centerUrl: Schema.optional(Schema.String),

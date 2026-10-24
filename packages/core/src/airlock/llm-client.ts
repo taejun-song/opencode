@@ -36,6 +36,10 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const base = yield* LLMClient.Service
     const app = yield* App.Metadata
-    return LLMClient.Service.of(wrap(base, (request) => AirlockSecurity.check(checkInput(request, app.version))))
+    return LLMClient.Service.of(
+      wrap(base, (request) =>
+        AirlockSecurity.license().pipe(Effect.andThen(AirlockSecurity.check(checkInput(request, app.version)))),
+      ),
+    )
   }),
 ).pipe(Layer.provide(LLMClient.layer))

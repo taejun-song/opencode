@@ -46,3 +46,12 @@ describe("airlock build identity", () => {
     expect(await read("src/commands/commands.ts")).toContain('OPENCODE_CLI_NAME : "airlock-engine"')
   })
 })
+
+describe("airlock vendor license key", () => {
+  test("both builds bake AIRLOCK_LICENSE_PUBKEY_B64 from the build environment", async () => {
+    for (const f of ["script/build.ts", "vite.node.config.ts"]) {
+      const src = await Bun.file(path.join(import.meta.dir, "..", f)).text()
+      expect(src, f).toContain('AIRLOCK_LICENSE_PUBKEY_B64: JSON.stringify(process.env.AIRLOCK_LICENSE_PUBKEY_B64 ?? "")')
+    }
+  })
+})

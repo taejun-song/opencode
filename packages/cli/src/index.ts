@@ -18,6 +18,7 @@ import { Npm } from "@opencode/util/npm"
 import { EffectFlock } from "@opencode/util/effect-flock"
 import { Heap } from "./heap"
 import { CpuProfile } from "./cpu-profile"
+import { airlockGate } from "./airlock-gate"
 
 ensurePluginRuntime()
 
@@ -25,6 +26,9 @@ if (process.env.OPENCODE_SSH_ASKPASS_PORT) {
   const { askpass } = await import("./ssh-askpass")
   process.exit(await Effect.runPromise(askpass.pipe(Effect.provide(NodeServices.layer))))
 }
+
+// airlock: license gate (and CI self-test hooks) before any command runs.
+await airlockGate(process.argv.slice(2), OPENCODE_VERSION)
 
 const Handlers = Runtime.handlers(Commands, {
   $: () => import("./commands/handlers/default"),

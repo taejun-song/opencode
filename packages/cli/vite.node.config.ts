@@ -279,6 +279,8 @@ export function mainConfig(input: NodeBuildInput): UserConfig {
       OPENCODE_CLI_NAME: JSON.stringify("airlock-engine"), // airlock
       OPENCODE_CHANNEL: JSON.stringify("airlock"), // airlock
       OPENCODE_ARTIFACT: JSON.stringify("cli-node"),
+      // airlock: vendor builds bake the license public key (empty = public build, enforcement opt-in by key file).
+      AIRLOCK_LICENSE_PUBKEY_B64: JSON.stringify(process.env.AIRLOCK_LICENSE_PUBKEY_B64 ?? ""),
       ...(input.highlights ? { OPENCODE_RELEASE_HIGHLIGHTS: JSON.stringify(input.highlights) } : {}),
       OPENCODE_LIBC: input.target.platform === "linux" ? JSON.stringify("glibc") : "undefined",
       FFF_LIBC: input.target.platform === "linux" ? JSON.stringify("gnu") : "undefined",

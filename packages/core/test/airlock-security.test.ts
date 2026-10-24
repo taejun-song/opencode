@@ -159,3 +159,20 @@ describe("check against the security center", () => {
     expect(fs.readFileSync(journal, "utf8").trim()).toBe("")
   })
 })
+
+describe("license on every model request", () => {
+  test("an enforced key with no license fails the request with the license kind", async () => {
+    const { generateKeyPairSync, randomBytes } = await import("node:crypto")
+    const pub32 = generateKeyPairSync("ed25519").publicKey.export({ format: "der", type: "spki" }).subarray(-32)
+    const dir = tmp("al-lic-")
+    fs.writeFileSync(path.join(dir, "airlock.pub"), `untrusted comment: k\n${Buffer.concat([Buffer.from("Ed"), randomBytes(8), pub32]).toString("base64")}\n`)
+    const r = reasonOf(await run(AirlockSecurity.license({ dir, now: Date.now(), warnDays: 14, bakedKeyB64: "" })))
+    expect(r._tag).toBe("SecurityPolicy")
+    expect(r.kind).toBe("license")
+    expect(r.message).toContain("no license installed")
+  })
+  test("enforcement off (no key) lets requests through", async () => {
+    const exit = await run(AirlockSecurity.license({ dir: tmp("al-nolic-"), now: Date.now(), warnDays: 14, bakedKeyB64: "" }))
+    expect(Exit.isSuccess(exit)).toBe(true)
+  })
+})

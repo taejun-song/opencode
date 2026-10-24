@@ -194,6 +194,8 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
       OPENCODE_CLI_NAME: "'airlock-engine'",
       OPENCODE_CHANNEL: "'airlock'",
       OPENCODE_ARTIFACT: `'cli'`,
+      // airlock: vendor builds bake the license public key (empty = public build, enforcement opt-in by key file).
+      AIRLOCK_LICENSE_PUBKEY_B64: JSON.stringify(process.env.AIRLOCK_LICENSE_PUBKEY_B64 ?? ""),
       ...(highlights ? { OPENCODE_RELEASE_HIGHLIGHTS: JSON.stringify(highlights) } : {}),
       OPENCODE_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "undefined",
       // FFF_LIBC selects the fff native lib variant: "musl" or "gnu".

@@ -1,11 +1,11 @@
 export * as ConfigDiscovery from "./discovery.js"
 
 import os from "os"
-import { existsSync } from "fs"
 import path from "path"
 import { Effect } from "effect"
 import { FSUtil } from "@opencode/util/fs-util"
 import { Global, ProjectDir, ConfigNames } from "@opencode/util/global"
+import { AirlockCenter } from "@opencode/util/airlock-center"
 import { Location } from "../location.js"
 import { AbsolutePath } from "../schema.js"
 import type { Options } from "../config.js"
@@ -30,7 +30,7 @@ export interface Sources {
 export function systemDirectory(
   platform: NodeJS.Platform = process.platform,
   env: NodeJS.ProcessEnv = process.env,
-  realHasConfig: (dir: string) => boolean = (dir) => ConfigNames.some((n) => existsSync(path.join(dir, n))),
+  realHasConfig: (dir: string) => boolean = AirlockCenter.hasConfig,
 ) {
   const real = platformSystemDirectory(platform, env)
   // airlock: the test override never replaces a real managed profile (it would be a policy bypass).
@@ -40,9 +40,7 @@ export function systemDirectory(
 }
 
 function platformSystemDirectory(platform: NodeJS.Platform, env: NodeJS.ProcessEnv) {
-  if (platform === "darwin") return AbsolutePath.make("/Library/Application Support/airlock")
-  if (platform === "win32") return AbsolutePath.make(path.join(env.ProgramData || "C:\\ProgramData", "airlock"))
-  return AbsolutePath.make("/etc/airlock")
+  return AbsolutePath.make(AirlockCenter.managedDir(platform, env))
 }
 
 /** macOS MDM managed preferences plists, most specific first; the first one present wins. */

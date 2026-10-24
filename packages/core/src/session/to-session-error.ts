@@ -67,7 +67,14 @@ export function toSessionError(cause: unknown): SessionError.Error {
             ([, v]) => v !== undefined,
           ),
         )
-        const type = r.kind === "unavailable" ? "airlock.unavailable" : r.kind === "credential" ? "airlock.credential" : "airlock.policy"
+        const type =
+          r.kind === "unavailable"
+            ? "airlock.unavailable"
+            : r.kind === "credential"
+              ? "airlock.credential"
+              : r.kind === "license"
+                ? "airlock.license"
+                : "airlock.policy"
         return { type, message: r.message, response: { body: JSON.stringify(details) } }
       }
       default: {
