@@ -26,7 +26,7 @@ describe("airlock file names", () => {
 
 describe("airlock entrypoints", () => {
   const first = (file: string) =>
-    Bun.file(path.join(import.meta.dir, "..", file)).text().then((t) => t.split("\n").find((l) => l.startsWith("import")))
+    Bun.file(path.join(import.meta.dir, "..", file)).text().then((t) => t.split(/\r?\n/).find((l) => l.startsWith("import")))
   test("both CLI entrypoints import the AIRLOCK_* aliases before anything else", async () => {
     expect(await first("src/index.ts")).toBe('import "@opencode/util/airlock-env"')
     expect(await first("src/node/index.ts")).toBe('import "@opencode/util/airlock-env"')
