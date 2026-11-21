@@ -7,6 +7,7 @@ import type { ContextSnapshotDecodeError, MessageDecodeError } from "../error"
 import { SessionRunnerModel } from "./model"
 import type { SystemContext } from "../../system-context/index"
 import type { ToolOutputStore } from "../../tool-output-store"
+import type { SecurityError } from "../../airlock/security"
 
 export type RunError =
   | LLMError
@@ -15,6 +16,8 @@ export type RunError =
   | ContextSnapshotDecodeError
   | SystemContext.InitializationBlocked
   | ToolOutputStore.Error
+  // airlock overlay (feature 012): the pre-send security check (llm.ts).
+  | SecurityError
 
 /** Runs one local continuation from already-recorded Session history. */
 export interface Interface {

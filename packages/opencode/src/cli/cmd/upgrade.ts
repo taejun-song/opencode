@@ -24,7 +24,7 @@ export const UpgradeCommand = {
         type: "boolean",
       })
   },
-  handler: async (_args: { target?: string; method?: string; major?: boolean }) => {
+  handler: async (args: { target?: string; method?: string; major?: boolean }) => {
     // airlock: the engine is updated only by installing a new airlock bundle (air-gapped,
     // signed, pinned). Self-upgrade would fetch from the internet and could replace airlock
     // with stock upstream, so this command never downloads anything.
@@ -72,7 +72,7 @@ export const UpgradeCommand = {
       return
     }
 
-    const target = args.target ? args.target.replace(/^v/, "") : await Installation.latest()
+    const target = (args.target ?? "").replace(/^v/, "") || (await Installation.latest())
 
     if (InstallationVersion === target) {
       prompts.log.warn(`opencode upgrade skipped: ${target} is already installed`)
