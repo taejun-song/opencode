@@ -5,7 +5,7 @@ import { serviceUse } from "@opencode-ai/core/effect/service-use"
 import { Provider } from "@/provider/provider"
 
 import { generateObject, streamObject, type ModelMessage } from "ai"
-import { securityCheck } from "@opencode-ai/core/airlock/security"
+import { type SecurityError, securityCheck } from "@opencode-ai/core/airlock/security"
 import { Truncate } from "@/tool/truncate"
 import { Auth } from "../auth"
 import { ProviderTransform } from "@/provider/transform"
@@ -76,7 +76,7 @@ export interface Interface {
       whenToUse: string
       systemPrompt: string
     },
-    Provider.DefaultModelError
+    Provider.DefaultModelError | SecurityError
   >
 }
 
@@ -418,8 +418,8 @@ const layer = Layer.effect(
 
         // airlock overlay (feature 012): `agent generate` bypasses LLM.run — check here too.
         yield* Effect.tryPromise({
-          try: () => securityCheck({ model: `${model.providerID}/${model.id}`, messages: params.messages }),
-          catch: (e) => e as Error,
+          try: () => securityCheck({ model: `${model.providerID}/${model.modelID}`, messages: params.messages }),
+          catch: (e) => e as SecurityError,
         })
 
         if (isOpenaiOauth) {

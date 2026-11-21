@@ -176,6 +176,11 @@ export type CheckInput = {
 
 export type Outcome = "off" | "allow" | "unavailable-permissive"
 
+/** What securityCheck rejects with: callers fail their Effect with it, so it belongs in their error types. */
+export type SecurityError =
+  | InstanceType<typeof SecurityPolicyError>
+  | InstanceType<typeof SecurityUnavailableError>
+
 // Resolves when the request may proceed; throws SecurityPolicyError /
 // SecurityUnavailableError otherwise. No-op when no profile is deployed.
 export async function securityCheck(input: CheckInput): Promise<void> {

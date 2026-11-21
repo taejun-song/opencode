@@ -314,6 +314,23 @@ export type ContentFilterError = {
   }
 }
 
+export type SecurityPolicyError = {
+  name: "SecurityPolicyError"
+  data: {
+    message: string
+    rule?: string
+    event_id?: string
+  }
+}
+
+export type SecurityUnavailableError = {
+  name: "SecurityUnavailableError"
+  data: {
+    message: string
+    center_url: string
+  }
+}
+
 export type ApiError = {
   name: "APIError"
   data: {
@@ -346,6 +363,8 @@ export type AssistantMessage = {
     | StructuredOutputError
     | ContextOverflowError
     | ContentFilterError
+    | SecurityPolicyError
+    | SecurityUnavailableError
     | ApiError
   parentID: string
   modelID: string
@@ -1222,6 +1241,8 @@ export type GlobalEvent = {
             | StructuredOutputError
             | ContextOverflowError
             | ContentFilterError
+            | SecurityPolicyError
+            | SecurityUnavailableError
             | ApiError
         }
       }
@@ -1888,6 +1909,12 @@ export type AttachmentConfig = {
 
 export type Config = {
   $schema?: string
+  security_center?: {
+    center_url: string
+    token: string
+    fail_mode?: "strict" | "permissive"
+    timeout_ms?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  }
   shell?: string
   logLevel?: LogLevel
   server?: ServerConfig
@@ -5364,6 +5391,8 @@ export type SessionError = {
       | StructuredOutputError
       | ContextOverflowError
       | ContentFilterError
+      | SecurityPolicyError
+      | SecurityUnavailableError
       | ApiError
   }
 }
@@ -6689,6 +6718,8 @@ export type EventSessionError = {
       | StructuredOutputError
       | ContextOverflowError
       | ContentFilterError
+      | SecurityPolicyError
+      | SecurityUnavailableError
       | ApiError
   }
 }

@@ -9,7 +9,7 @@ import {
   type ProviderErrorEvent,
 } from "@opencode-ai/llm"
 import { Cause, DateTime, Effect, FiberSet, Layer, Option, Semaphore, Stream } from "effect"
-import { securityCheck } from "../../airlock/security"
+import { type SecurityError, securityCheck } from "../../airlock/security"
 import { AgentV2 } from "../../agent"
 import { Config } from "../../config"
 import { Database } from "../../database/database"
@@ -244,7 +244,7 @@ const layer = Layer.effect(
         Effect.tryPromise({
           try: () =>
             securityCheck({ sessionID: session.id, model: `${model.provider}/${model.id}`, messages: request.messages }),
-          catch: (e) => e as Error,
+          catch: (e) => e as SecurityError,
         }).pipe(Effect.map(() => llm.stream(request))),
       ).pipe(
         Stream.runForEach((event) =>
